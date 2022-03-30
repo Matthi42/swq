@@ -21,12 +21,14 @@ executable liedle
     , containers
 
     , text
+    , bytestring
     , directory
 
     , wai
     , warp
     , http-types
     , lucid
+    , uri-encode
 
     , megaparsec
 
