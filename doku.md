@@ -25,7 +25,7 @@ einfach identifizieren zu können.
 
 # Architektur
 
-![Grobe Architektur](./imgs/architektur.jpg)
+![Grobe Architektur](./imgs/architektur.png)
 
 # Detaillierte Planung
 
