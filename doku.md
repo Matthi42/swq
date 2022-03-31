@@ -22,3 +22,47 @@ korrekte Nummer, damit ich schnell alle Elemente erkennen kann.
 Als Benutzer möchte ich, dass die Länder als 2-Stelliges Kürzel 
 nach dem dazugehörigen ISO-Standard angezeigt werden, um diese 
 einfach identifizieren zu können.
+
+# Architektur
+
+![Grobe Architektur](./imgs/architektur.jpg)
+
+# Detaillierte Planung
+
+```haskell
+main :: Request -> Html
+-- main = do 
+--     allNumbers <- newIORef []
+--     (processRequest allNumbers) =<< parseRequest
+
+-- GET url.example.com/ --> HTML
+-- POST url.example.com/ --> parse -> HTML mit Number
+
+data NumberRequest = GetHTML 
+                   | PostNumber String
+                   | WrongEndpoint
+
+parseRequest :: Request -> NumberRequest
+processRequest :: IORef [Number] -> NumberRequest -> IO Html 
+
+renderForm :: Html 
+render404 :: Html
+
+parseAndRender :: IORef [Number] -> String -> IO Html
+parseNumber :: String -> Either NumberError Number
+
+renderError :: NumberError -> Html 
+renderResult :: Number -> [Number] -> Html 
+
+data NumberError = IllegalChars String 
+                 | IncorrectLength Int
+                 | UnknownCountryCode String
+
+type LandISOCode = String
+data Number = Number
+    { countryCode :: LandISOCode
+    , areaCode    :: String
+    , mainNumber  :: String
+    , extension   :: Maybe String
+    }
+```
