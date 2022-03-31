@@ -1,31 +1,32 @@
 # User stories
 
-## 1. Korrekte Eingabe
-Als Benutzer möchte ich, dass meine Eingabe immer korrekt
-aufgeteilt wird, damit der Kunde kontakiert werden kann.
+## 1. Korrekte Eingabe | 3
+Als Benutzer möchte ich, dass meine Eingabe immer korrekt aufgeteilt wird,
+damit der Kunde kontaktiert werden kann.
 
-## 2. Tolerante
-Eingabe Als Benutzer möchte ich, dass meine Eingabe nicht der
-ISO-Norm entsprechen muss, um angenommen zu werden (Leerzeichen
-ignorieren), damit die Benutzung einfach ist.
+## 2. Tolerante Eingabe | 3
+Als Benutzer möchte ich, dass meine Eingabe nicht der ISO-Norm entsprechen
+muss, um angenommen zu werden (Leerzeichen ignorieren), damit die Benutzung
+einfach ist.
 
-## 3. Fehlerrückmeldung
-Als Benutzer möchte ich eine angemessene Fehlerrückmeldung, wenn
-die Eingabe falsch ist, um schnell Fehler zu bemerken und
-korrigieren.
+## 3. Fehlerrückmeldung | 1
+Als Benutzer möchte ich eine angemessene Fehlerrückmeldung, wenn die Eingabe
+falsch ist, um schnell Fehler zu bemerken und korrigieren.
 
-## 4. Ausgabe
-Als Benutzer möchte ich eine gleichförmige Ausgabe für jede
-korrekte Nummer, damit ich schnell alle Elemente erkennen kann.
+## 4. Ausgabe | 3
+Als Benutzer möchte ich eine übersichtliche, moderne und gleichförmige Ausgabe
+für jede korrekte Nummer, damit ich schnell alle Elemente erkennen kann.
 
-## 5. Ausgabe
-Als Benutzer möchte ich, dass die Länder als 2-Stelliges Kürzel 
-nach dem dazugehörigen ISO-Standard angezeigt werden, um diese 
-einfach identifizieren zu können.
+## 5. Ausgabe | 1
+Als Benutzer möchte ich, dass die Länder als 2-Stelliges Kürzel nach dem
+dazugehörigen ISO-Standard angezeigt werden, um diese einfach identifizieren zu
+können.
+
 
 # Architektur
 
 ![Grobe Architektur](./imgs/architektur.png)
+
 
 # Detaillierte Planung
 
@@ -66,3 +67,11 @@ data Number = Number
     , extension   :: Maybe String
     }
 ```
+
+# Backlog 
+
+1. 1 Johannes
+2. 4 Matthi
+3. 5
+4. 3
+5. 2

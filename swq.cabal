@@ -17,20 +17,18 @@ executable liedle
   build-depends:
     , base 
     , relude
-    , unordered-containers
-    , containers
+--    , unordered-containers
+--    , containers
 
     , text
     , bytestring
-    , directory
+    , regex-tdfa
 
     , wai
+    , wai-extra
     , warp
     , http-types
     , lucid
-    , uri-encode
-
-    , megaparsec
 
   mixins:
     base hiding (Prelude),

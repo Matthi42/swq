@@ -1,79 +1,130 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE TupleSections #-}
 
 module Main where
 
-import           Data.Text                 (stripPrefix, pack)
+import           Data.Char                 (isNumber)
+import           Data.Text                 (pack, stripPrefix)
 import           Lucid
-import           Network.HTTP.Types        (status200, status404)
-import           Network.URI.Encode        (decodeText)
+import           Network.HTTP.Types        (methodGet, methodPost, status200,
+                                            status404, Status)
 import           Network.HTTP.Types.Header (hContentType)
-import           Network.Wai               (Application, Response, rawPathInfo,
-                                            responseFile, responseLBS,
-                                            strictRequestBody)
+import           Network.Wai
 import           Network.Wai.Handler.Warp  (run)
-import           Prelude                   hiding (ByteString, length)
+import           Network.Wai.Parse
+import           Prelude                   hiding (length)
 import           Types
-import Data.Char (isNumber)
-import           Text.Megaparsec      hiding (chunk)
-import           Text.Megaparsec.Char (char, space, string)
 
+-- import           Text.Megaparsec      hiding (chunk)
+-- import           Text.Megaparsec.Char (char, space, string)
+
+----------------------------------------------------- TYPES -----------------------------------------------------
 
 main :: IO ()
-main = run 3003 serve
-  where
-    serve request respond = do
-        print $ rawPathInfo request
-        print =<< strictRequestBody request
-        response <- case rawPathInfo request of
-            "/post" -> page . Just . parseNumber <$> strictRequestBody request
-            _       -> return $ page Nothing
-        respond $ responseLBS status200 [(hContentType, "text/html")] $ renderBS response
+respondHtml :: Status -> Html () -> Response
+runNumberApp :: DB -> Text -> Request -> IO (Status, Html ())
 
-parseNumber :: LByteString -> Html ()
-parseNumber input = div_ $ do
-    h1_ "Ergebnis:"
-    let input = decodeText . toText $ input
-    --     input' = stripPrefix "number=" input ?: input
-    -- case parse pNumber "Eingabe" input of
-    --     Right s -> code_ . toHtml $ (show s :: String)
-    --     Left e -> code_ . toHtml $ errorBundlePretty e
-    code_ $ toHtml input
+type DB = IORef [Number]
+data NumberRequest
+    = GetHTML
+    | PostNumber ByteString
+    | WrongEndpoint
 
-data LandISOCode = DE deriving (Show)
+type NumberResult = Either NumberError Number
+data NumberError
+    = IllegalChars String
+    | IncorrectLength Int
+    | UnknownCountryCode String
+    deriving (Show)
 
+type LandISOCode = String
 data Number = Number
-    { landVorwahl  :: LandISOCode
-    , stadtVorwahl :: Text
-    , num          :: Text
-    , durchwahl    :: Maybe Text
+    { countryCode :: LandISOCode
+    , areaCode    :: String
+    , mainNumber  :: String
+    , extension   :: Maybe String
     }
     deriving (Show)
 
-type Parser = Parsec Void Text
+parseRequest :: Request -> IO NumberRequest
+processRequest :: DB -> Text -> NumberRequest -> IO (Status, Html ())
 
-pNumber :: Parser Number
-pNumber = do
-    vorwahl <- optional $ DE <$ "+49"
-    -- let a = (if isJust vorwahl then option [] (pure <$> char '0') else pure <$> char '0')
-    -- city <- (++) <$> a <*> count 4 (satisfy isNumber)
-    -- optional sep
-    -- num <- count 6 (satisfy isNumber)
-    -- durchwahl <- optional $ optional sep *> count 3 (satisfy isNumber)
-    return $ Number (vorwahl ?: DE) "" "" (Just "") -- (pack city) (pack num) (pack <$> durchwahl)
+parseNumber :: ByteString -> NumberResult
 
-sep :: Parser ()
-sep = void $ oneOf ['/', '-']
+renderResultAndForm :: [Number] -> Maybe NumberResult -> Html ()
+renderError :: NumberError -> Html ()
+renderResult :: Number -> Html ()
 
-page :: Maybe (Html ()) -> Html ()
-page solution = html_ $ do
+------------------------------------------------ IMPLEMENTATION -------------------------------------------------
+
+main = do
+    allNumbers <- newIORef []
+    css <- readFileText "./style.css"
+    run 3003 $ \request respond -> do
+        -- print $ rawPathInfo request
+        -- print =<< strictRequestBody request
+        htmlResult <- runNumberApp allNumbers css request
+        respond (uncurry respondHtml htmlResult)
+
+runNumberApp allNumbers css = processRequest allNumbers css <=< parseRequest
+respondHtml status = responseLBS status [(hContentType, "text/html")] . renderBS
+
+parseRequest request = toNumRequest <$> parseRequestBodyEx defaultParseRequestBodyOptions lbsBackEnd request
+  where
+    correctPath :: ([Param], b) -> NumberRequest
+    correctPath body
+        | requestMethod request == methodGet = GetHTML
+        | requestMethod request == methodPost =
+            case find ((== "number") . fst) (fst body) of
+                Just (_, rawNumber) -> PostNumber rawNumber
+                Nothing             -> WrongEndpoint -- MAYBE better error
+        | otherwise = WrongEndpoint
+-- GET url.example.com/ --> HTML
+-- POST url.example.com/ --> parse -> HTML mit Number
+-- everything else -> 404
+    toNumRequest body = case rawPathInfo request of
+        "/" -> correctPath body
+        ""  -> correctPath body
+        _   -> WrongEndpoint
+
+processRequest db css GetHTML =  (status200,) . page css . flip renderResultAndForm Nothing <$> readIORef db
+processRequest _  css WrongEndpoint = return . (status200,) . page css $ h1_ "Page not found"
+processRequest db css (PostNumber rawNumber) = do
+    let result = parseNumber rawNumber
+        update = case result of
+            Right newNumber -> (:) newNumber
+            Left _ -> id
+    numbers <- atomicModifyIORef db (update &&& id)
+    print rawNumber
+    print result
+    print numbers
+    return . (status200,) . page css $ renderResultAndForm numbers (Just result)
+
+parseNumber = const . return $ Number "" "" "" Nothing
+
+renderResultAndForm numbers solution = do
+        form_ [method_ "POST", action_ "/"] $ do
+            label_ "Telefonnummer eingeben:"
+            input_ [name_ "number", type_ "tel"]
+            input_ [type_ "submit"]
+        case solution of
+            Nothing -> mempty
+            Just (Left error) -> renderError error
+            Just (Right result) -> renderResult result
+        forM_ numbers (p_ . show)
+
+renderError = code_ . show
+renderResult result = do
+    span_ "Ergebnis: "
+    span_ . show $ result
+
+page :: Text -- ^ CSS-Datei
+  -> Html () -- ^ Html body
+  -> Html () 
+page css body = html_ $ do
     head_ $ do
         meta_ [charset_ "UTF-8"]
         meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1.0"]
+        style_ css
         title_ "Telefonnummer"
-    body_ $ do
-        fromMaybe mempty solution
-        br_ []
-        h1_ "Telefonnummer eingeben:"
-        form_ [method_ "POST", action_ "/post"] $ do
-            input_ [name_ "number", type_ "tel"]
-            input_ [type_ "submit"]
+    body_ body
