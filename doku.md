@@ -17,3 +17,8 @@ korrigieren.
 ## 4. Ausgabe
 Als Benutzer möchte ich eine gleichförmige Ausgabe für jede
 korrekte Nummer, damit ich schnell alle Elemente erkennen kann.
+
+## 5. Ausgabe
+Als Benutzer möchte ich, dass die Länder als 2-Stelliges Kürzel 
+nach dem dazugehörigen ISO-Standard angezeigt werden, um diese 
+einfach identifizieren zu können.
