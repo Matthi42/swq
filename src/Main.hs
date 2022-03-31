@@ -113,7 +113,17 @@ renderResultAndForm numbers solution = do
             Just (Right result) -> renderResult result
         forM_ numbers (p_ . show)
 
-renderError = code_ . show
+--Lars
+renderError (IllegalChars chars) = do
+    span_ "Fehler: Es wurden nicht erlaubte Character gefunden."
+    span_ . show $ chars
+renderError (IncorrectLength number) = do
+    span_ "Fehler: Die Nummer kann keine authentitäre Nummer sein, da sie entweder zu lang oder zu kurz ist."
+    span_ . show $ number
+renderError (UnknownCountryCode chars) = do
+    span_ "Fehler: Es wurde kein Land zu der ausgewählten Nummer gefunden."
+    span_ . show $ chars
+
 renderResult result = do
     span_ "Ergebnis: "
     span_ . show $ result
