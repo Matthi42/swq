@@ -1,10 +1,10 @@
 html {
     font-family: 'Roboto', sans-serif;
-    display:block;
+    display: block;
 }
 
 h1 {
-    color:rgb(93, 82, 131);
+    color: rgb(93, 82, 131);
 }
 
 input {
@@ -14,42 +14,46 @@ input {
     margin: 4px;
 }
 
-.button{
+.button {
     background-color: rgb(139, 80, 136);
     border-color: rgb(93, 82, 131);
-    color:rgb(255, 255, 255);
-}
-.button:hover{
-    background-color: rgb(93, 82, 131);
-    color:rgb(255, 255, 255);
+    color: rgb(255, 255, 255);
 }
 
-.error{
-    color:rgb(199, 18, 18);
+.button:hover {
+    background-color: rgb(93, 82, 131);
+    color: rgb(255, 255, 255);
+}
+
+.error {
+    color: rgb(199, 18, 18);
     background-color: rgb(251, 201, 177);
     border-radius: 5px;
 }
 
-.num-list{
+.num-list {
     list-style: none;
 }
 
-.number span{
+.number {
+    margin-bottom: 6px;
+}
+
+.number span {
     background-color: rgb(227, 227, 227);
     margin: 3px;
     padding: 2px;
     border-radius: 5px;
 }
-.number .heading{
-    background-color: rgb(255, 255, 255);
-}
-.number {
-    margin-bottom: 6px;
-}
-.heading{
+
+.heading {
     background-color: rgb(255, 255, 255);
     margin: 3px;
     padding: 2px;
     border-radius: 5px;
     font-weight: bold;
+}
+
+.number .heading {
+    background-color: rgb(255, 255, 255);
 }

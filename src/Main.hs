@@ -126,9 +126,6 @@ renderNumber (Number cc ac mn e) =
         case e of
             (Just ex) -> span_ $ toHtml ex
             Nothing -> span_ "-"
-               
-                
-
 --Lars
 renderError (IllegalChars chars) = do
     p_ [class_ "error"] $ do
