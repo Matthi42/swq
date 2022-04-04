@@ -38,6 +38,7 @@ data NumberError
     deriving (Show)
 
 type LandISOCode = String
+type NumberString = String
 data Number = Number
     { countryCode :: LandISOCode
     , areaCode    :: String
@@ -54,6 +55,8 @@ parseNumber :: ByteString -> NumberResult
 renderResultAndForm :: [Number] -> Maybe NumberResult -> Html ()
 renderError :: NumberError -> Html ()
 renderResult :: Number -> Html ()
+renderNumber :: Number -> Html ()
+
 
 ------------------------------------------------ IMPLEMENTATION -------------------------------------------------
 
@@ -100,34 +103,50 @@ processRequest db css (PostNumber rawNumber) = do
     print numbers
     return . (status200,) . page css $ renderResultAndForm numbers (Just result)
 
-parseNumber = const . return $ Number "" "" "" Nothing
+parseNumber = const . return $ Number "+49" "074538" "77719" (Just "15")
 
 renderResultAndForm numbers solution = do
+        h1_ "Telefonnummern"
         form_ [method_ "POST", action_ "/"] $ do
-            label_ [class_ "error"] "Telefonnummer eingeben:"
+            label_ [class_ "heading"] "Telefonnummer eingeben:"
             input_ [name_ "number", type_ "tel"]
-            input_ [type_ "submit"]
+            input_ [type_ "submit", class_ "button"]
         case solution of
             Nothing -> mempty
             Just (Left error) -> renderError error
             Just (Right result) -> renderResult result
         ul_ [class_ "num-list"] $ do
-            forM_ numbers (li_ . show)
+            forM_ numbers (li_ [class_ "number"] . renderNumber)
+
+renderNumber (Number cc ac mn e) =
+    do
+        span_ $ toHtml cc
+        span_ $ toHtml ac
+        span_ $ toHtml mn
+        case e of
+            (Just ex) -> span_ $ toHtml ex
+            Nothing -> span_ "-"
+               
+                
 
 --Lars
 renderError (IllegalChars chars) = do
-    span_ "Fehler: Es wurden nicht erlaubte Character gefunden."
-    span_ . show $ chars
+    p_ [class_ "error"] $ do
+        span_ "Fehler: Es wurden nicht erlaubte Character gefunden."
+        span_ . show $ chars
 renderError (IncorrectLength number) = do
-    span_ "Fehler: Die Nummer kann keine authentitäre Nummer sein, da sie entweder zu lang oder zu kurz ist."
-    span_ . show $ number
+    p_ [class_ "error"] $ do
+        span_ "Fehler: Die Nummer kann keine authentitäre Nummer sein, da sie entweder zu lang oder zu kurz ist."
+        span_ . show $ number
 renderError (UnknownCountryCode chars) = do
-    span_ "Fehler: Es wurde kein Land zu der ausgewählten Nummer gefunden."
-    span_ . show $ chars
+    p_ [class_ "error"] $ do
+        span_ "Fehler: Es wurde kein Land zu der ausgewählten Nummer gefunden."
+        span_ . show $ chars
 
 renderResult result = do
-    span_ "Ergebnis: "
-    span_ . show $ result
+    p_ [class_ "number"]$ do
+        span_ [class_ "heading"] "Ergebnis: "
+        renderNumber result
 
 page :: Text -- ^ CSS-Datei
   -> Html () -- ^ Html body
