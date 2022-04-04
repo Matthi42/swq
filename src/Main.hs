@@ -104,14 +104,15 @@ parseNumber = const . return $ Number "" "" "" Nothing
 
 renderResultAndForm numbers solution = do
         form_ [method_ "POST", action_ "/"] $ do
-            label_ "Telefonnummer eingeben:"
+            label_ [class_ "error"] "Telefonnummer eingeben:"
             input_ [name_ "number", type_ "tel"]
             input_ [type_ "submit"]
         case solution of
             Nothing -> mempty
             Just (Left error) -> renderError error
             Just (Right result) -> renderResult result
-        forM_ numbers (p_ . show)
+        ul_ [class_ "num-list"] $ do
+            forM_ numbers (li_ . show)
 
 --Lars
 renderError (IllegalChars chars) = do
@@ -137,4 +138,5 @@ page css body = html_ $ do
         meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1.0"]
         style_ css
         title_ "Telefonnummer"
+        link_ [href_ "https://fonts.googleapis.com/css?family=Butterfly+Kids|Roboto",rel_ "stylesheet"]
     body_ body
