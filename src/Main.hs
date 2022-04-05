@@ -39,6 +39,7 @@ data NumberError
     deriving (Show)
 
 type LandISOCode = String
+type NumberString = String
 data Number = Number
     { countryCode :: LandISOCode
     , areaCode    :: String
@@ -55,6 +56,8 @@ parseNumber :: ByteString -> NumberResult
 renderResultAndForm :: [Number] -> Maybe NumberResult -> Html ()
 renderError :: NumberError -> Html ()
 renderResult :: Number -> Html ()
+renderNumber :: Number -> Html ()
+
 
 ------------------------------------------------ IMPLEMENTATION -------------------------------------------------
 
@@ -102,29 +105,54 @@ processRequest db css (PostNumber rawNumber) = do
     return . (status200,) . page css $ renderResultAndForm numbers (Just result)
 
 -- https://github.com/robinheghan/elm-phone-numbers/blob/master/src/PhoneNumber/Countries.elm#L3005
-numberRegex :: ByteString
-numberRegex = "(?:32|49[4-6]\\d)"
--- (?:32|49[4-6]\\d)\\d{9}|49[0-7]\\d{3,9}|(?:[34]0|[68]9)\\d{3,13}|(?:2(?:0[1-689]|[1-3569]\\d|4[0-8]|7[1-7]|8[0-7])|3(?:[3569]\\d|4[0-79]|7[1-7]|8[1-8])|4(?:1[02-9]|[2-48]\\d|5[0-6]|6[0-8]|7[0-79])|5(?:0[2-8]|[124-6]\\d|[38][0-8]|[79][0-7])|6(?:0[02-9]|[1-358]\\d|[47][0-8]|6[1-9])|7(?:0[2-8]|1[1-9]|[27][0-7]|3\\d|[4-6][0-8]|8[0-5]|9[013-7])|8(?:0[2-9]|1[0-79]|2\\d|3[0-46-9]|4[0-6]|5[013-9]|6[1-8]|7[0-8]|8[0-24-6])|9(?:0[6-9]|[1-4]\\d|[589][0-7]|6[0-8]|7[0-467]))\\d{3,12}
+-- numberRegex :: ByteString
+-- numberRegex = "(?:32|49[4-6]\\d)"
+-- -- (?:32|49[4-6]\\d)\\d{9}|49[0-7]\\d{3,9}|(?:[34]0|[68]9)\\d{3,13}|(?:2(?:0[1-689]|[1-3569]\\d|4[0-8]|7[1-7]|8[0-7])|3(?:[3569]\\d|4[0-79]|7[1-7]|8[1-8])|4(?:1[02-9]|[2-48]\\d|5[0-6]|6[0-8]|7[0-79])|5(?:0[2-8]|[124-6]\\d|[38][0-8]|[79][0-7])|6(?:0[02-9]|[1-358]\\d|[47][0-8]|6[1-9])|7(?:0[2-8]|1[1-9]|[27][0-7]|3\\d|[4-6][0-8]|8[0-5]|9[013-7])|8(?:0[2-9]|1[0-79]|2\\d|3[0-46-9]|4[0-6]|5[013-9]|6[1-8]|7[0-8]|8[0-24-6])|9(?:0[6-9]|[1-4]\\d|[589][0-7]|6[0-8]|7[0-467]))\\d{3,12}
 
-parseNumber raw = 
-    let match = raw =~ numberRegex :: Bool
-    in return $ Number (show match) "" "" Nothing
+-- parseNumber raw = 
+--     let match = raw =~ numberRegex :: Bool
+--     in return $ Number (show match) "" "" Nothing
+parseNumber = const . return $ Number "+49" "074538" "77719" (Just "15")
 
 renderResultAndForm numbers solution = do
+        h1_ "Telefonnummern"
         form_ [method_ "POST", action_ "/"] $ do
-            label_ "Telefonnummer eingeben:"
+            label_ [class_ "heading"] "Telefonnummer eingeben:"
             input_ [name_ "number", type_ "tel"]
-            input_ [type_ "submit"]
+            input_ [type_ "submit", class_ "button"]
         case solution of
             Nothing -> mempty
             Just (Left error) -> renderError error
             Just (Right result) -> renderResult result
-        forM_ numbers (p_ . show)
+        ul_ [class_ "num-list"] $ do
+            forM_ numbers (li_ [class_ "number"] . renderNumber)
 
-renderError = code_ . show
+renderNumber (Number cc ac mn e) =
+    do
+        span_ $ toHtml cc
+        span_ $ toHtml ac
+        span_ $ toHtml mn
+        case e of
+            (Just ex) -> span_ $ toHtml ex
+            Nothing -> span_ "-"
+--Lars
+renderError (IllegalChars chars) = do
+    p_ [class_ "error"] $ do
+        span_ "Fehler: Es wurden nicht erlaubte Character gefunden."
+        span_ . show $ chars
+renderError (IncorrectLength number) = do
+    p_ [class_ "error"] $ do
+        span_ "Fehler: Die Nummer kann keine authentitäre Nummer sein, da sie entweder zu lang oder zu kurz ist."
+        span_ . show $ number
+renderError (UnknownCountryCode chars) = do
+    p_ [class_ "error"] $ do
+        span_ "Fehler: Es wurde kein Land zu der ausgewählten Nummer gefunden."
+        span_ . show $ chars
+
 renderResult result = do
-    span_ "Ergebnis: "
-    span_ . show $ result
+    p_ [class_ "number"]$ do
+        span_ [class_ "heading"] "Ergebnis: "
+        renderNumber result
 
 page :: Text -- ^ CSS-Datei
   -> Html () -- ^ Html body
@@ -135,4 +163,5 @@ page css body = html_ $ do
         meta_ [name_ "viewport", content_ "width=device-width, initial-scale=1.0"]
         style_ css
         title_ "Telefonnummer"
+        link_ [href_ "https://fonts.googleapis.com/css?family=Butterfly+Kids|Roboto",rel_ "stylesheet"]
     body_ body
