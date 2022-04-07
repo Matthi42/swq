@@ -27,8 +27,7 @@ with lib; {
         User = "swq";
         Group = "swq";
         Type = "simple";
-        WorkingDirectory = "${./.}";
-        ExecStart = "${swqServer}/bin/swq";
+        ExecStart = "${swqServer}/bin/swq ${./style.css}";
       };
     };
 

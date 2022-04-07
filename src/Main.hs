@@ -18,6 +18,7 @@ import           Text.Megaparsec.Char
 
 -- import           Text.Regex.TDFA
 import           Types
+import           System.Environment
 
 -- import           Text.Megaparsec      hiding (chunk)
 -- import           Text.Megaparsec.Char (char, space, string)
@@ -60,8 +61,9 @@ renderNumber :: Number -> Html ()
 ------------------------------------------------ IMPLEMENTATION -------------------------------------------------
 
 main = do
+    args <- getArgs
+    css <- readFileText $ listToMaybe args ?: "./style.css"
     allNumbers <- newIORef []
-    css <- readFileText "./style.css"
     run 3003 $ \request respond -> do
         -- print $ rawPathInfo request
         -- print =<< strictRequestBody request
