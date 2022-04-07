@@ -1,7 +1,7 @@
 swq:
 { lib, config, pkgs, ... }:
 let
-  swqServer = liedle."${pkgs.system}";
+  swqServer = swq."${pkgs.system}";
   cfg = config.services.swq;
 in
 with lib; {
