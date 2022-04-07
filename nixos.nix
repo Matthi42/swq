@@ -27,6 +27,7 @@ with lib; {
         User = "swq";
         Group = "swq";
         Type = "simple";
+        WorkingDirectory = "${./.}";
         ExecStart = "${swqServer}/bin/swq";
       };
     };
