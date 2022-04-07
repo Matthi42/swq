@@ -184,32 +184,37 @@ type Parser = Parsec Void Text
 pNumber :: Parser (Maybe Text, Text, Text, Maybe Text)
 pNumber =
     let optionallyInBrackets :: Parser p -> Parser p
-        optionallyInBrackets p = try $ 
-                    between "(" ")" p
-                <|> between "[" "]" p
-                -- <|> between "(" ")" p
-                <|> p
+        optionallyInBrackets p =
+            try $
+                choice
+                    [ p
+                    , between "(" ")" p
+                    , between "[" "]" p
+                    ]
         sep :: Parser (Maybe Char)
         sep =
             optional $
-                char ' '
-                    <|> char '/'
-                    <|> char '-'
+                choice
+                    [ char ' '
+                    , char '/'
+                    , char '-'
+                    ]
         pCC = pack <$> ((:) <$> char '+' <*> count' 1 2 digitChar)
         pLeading0 :: Bool -> Parser String
-        pLeading0 True  = try $ "0" <$ "(0)"
-                       <|> "0" <$ char '0' 
-                       <|> return []
-        pLeading0 False = "0" <$ char '0'
+        pLeading0 True =
+            label "Leading zero" $
+                optionallyInBrackets (pure <$> char '0')
+                    <|> return []
+        pLeading0 False = optionallyInBrackets (pure <$> char '0')
         pAC = count' 2 4 digitChar
         pEx = pack <$> count' 1 3 digitChar
      in do
             cc <- optional (optionallyInBrackets pCC) <?> "Ländercode"
             sep
             ac <-
-                label "Vorwahl" . optionallyInBrackets . try $
+                label "Vorwahl" . optionallyInBrackets $
                     (++)
-                        <$> pLeading0 (isJust cc)
+                        <$> try (pLeading0 (isJust cc))
                         <*> pAC
             sep
             mn <-
@@ -223,30 +228,30 @@ pNumber =
 ----------------------------------------------------- TEST -----------------------------------------------------
 
 testData =
-    [ "+49 0201 123456"
-    , "+44 0201123456"
-    , "0033 0201/123456"
-    , "0049201123456"
-    , "(0)201 1234 56"
-    , "+49 (941) 790-4780"
-    , "015115011900"
-    , "+91 09870987 899"
-    , "[+49] (0)89-800/849-50"
-    , "+49 (8024) [990-477]"
+    [ ("+49 0201 123456", True)
+    , ("+44 0201123456", False)
+    , ("0033 0201/123456", True)
+    , ("0049201123456", True)
+    , ("(0)201 1234 56", True)
+    , ("+49 (941) 790-4780", True)
+    , ("015115011900", True)
+    , ("+91 09870987 899", False)
+    , ("[+49] (0)89-800/849-50", True)
+    , ("+49 (8024) [990-477]", True)
     ]
 
 printFailed :: IO ()
-printFailed = mapM_ (print' . parseNumber) testData
+printFailed = mapM_ (print' . parseNumber . fst) testData
   where
     print' (Left (IllegalChars err)) = putTextLn err
     print' (Left err)                = print err
     print' _                         = return ()
 
 printAll :: IO ()
-printAll = mapM_ (print' . parseNumber) testData
+printAll = mapM_ (uncurry (>>) . (print &&& print' . parseNumber) . fst) testData
   where
     print' (Left (IllegalChars err)) = putTextLn err
     print' (Left err)                = print err
     print' (Right suc)               = print suc
 
-test = isRight . mapM parseNumber $ testData
+test = all (\(num, res) -> isRight (parseNumber num) == res) testData

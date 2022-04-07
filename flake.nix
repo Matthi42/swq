@@ -37,7 +37,7 @@
             };
         in
         {
-          defaultPackage = project false; 
+          defaultPackage = project false;
           devShell = project true;
 
           checks = {
@@ -50,5 +50,7 @@
               };
             };
           };
-        }));
+        }) // {
+      nixosModule = import ./nixos.nix self.defaultPackage;
+    });
 }
