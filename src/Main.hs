@@ -91,7 +91,7 @@ parseRequest request = toNumRequest <$> parseRequestBodyEx defaultParseRequestBo
         _   -> WrongEndpoint
 
 processRequest db css GetHTML =  (status200,) . page css . flip renderResultAndForm Nothing <$> readIORef db
-processRequest _  css WrongEndpoint = return . (status200,) . page css $ h1_ "Page not found"
+processRequest _  css WrongEndpoint = return . (status404,) . page css $ h1_ "Page not found"
 processRequest db css (PostNumber rawNumber) = do
     let result = parseNumber rawNumber
         update = case result of
@@ -101,7 +101,7 @@ processRequest db css (PostNumber rawNumber) = do
     print rawNumber
     print result
     print numbers
-    return . (status200,) . page css $ renderResultAndForm numbers (Just result)
+    return . (status200,) . page css $ renderResultAndForm numbers $ Just result
 
 parseNumber = const . return $ Number "+49" "074538" "77719" (Just "15")
 
