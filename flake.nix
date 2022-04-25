@@ -1,7 +1,7 @@
 {
   description = "swq";
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs";
+    nixpkgs.url = "github:nixos/nixpkgs/c254b8c915ac912ae9ee9dc74eac555ccbf33795";
     flake-utils.url = "github:numtide/flake-utils";
     flake-compat = {
       url = "github:edolstra/flake-compat";
