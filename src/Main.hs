@@ -129,7 +129,6 @@ renderNumber (Number cc ac mn e) = do
     span_ . toHtml $ "(" <> snd cc <> ")"
     a_ [href_ $ "tel:" <> fst cc <> "-" <> ac <> "-" <> mn <> maybe "" ("-" <>) e] "📞"
 
---Lars
 renderError (IllegalChars chars) = do
     div_ [class_ "error"] $ do
         p_ "Fehler: Es wurden nicht erlaubte Zeichen gefunden."
