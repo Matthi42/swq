@@ -177,6 +177,12 @@ parseNumber num = do
     (cc, ac, mn, ex) <- first (IllegalChars . pack . errorBundlePretty) $ parse pNumber (unpack num) num
     cc <- case cc of
         Just "+49" -> return ("+49", "DE")
+        Just "+1" -> return ("+1", "US/CA")
+        Just "+52" -> return ("+52", "MX")
+        Just "+33" -> return ("+33", "FR")
+        Just "+32" -> return ("+32", "BE")
+        Just "+44" -> return ("+44", "UK")
+        Just "+91" -> return ("+91", "IN")
         Just cc    -> Left . UnknownCountryCode $ cc
         Nothing    -> return ("+49", "DE")
     return $ Number cc ac mn ex
@@ -231,13 +237,13 @@ pNumber =
 
 testData =
     [ ("+49 0201 123456", True)
-    , ("+44 0201123456", False)
+    , ("+44 0201123456", True)
     , ("0033 0201/123456", True)
     , ("0049201123456", True)
     , ("(0)201 1234 56", True)
     , ("+49 (941) 790-4780", True)
     , ("015115011900", True)
-    , ("+91 09870987 899", False)
+    , ("+91 09870987 899", True)
     , ("[+49] (0)89-800/849-50", True)
     , ("+49 (8024) [990-477]", True)
     ]
