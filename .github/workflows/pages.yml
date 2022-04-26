@@ -13,10 +13,10 @@ jobs:
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
     # - run: nix build
     # - run: nix flake check
-    - run: scripts/publish.sh
-        env:
-          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
-        if: github.ref == 'refs/heads/master'
+    - run: scripts/build
+      env:
+        DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+      if: github.ref == 'refs/heads/master'
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
       with:
