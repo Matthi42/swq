@@ -3,7 +3,7 @@ on:
   pull_request:
   push:
 jobs:
-  tests:
+  publish:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2.4.0
@@ -13,7 +13,7 @@ jobs:
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
     # - run: nix build
     # - run: nix flake check
-    - run: scripts/build
+    - run: nix develop -c ./scripts/build
       env:
         DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
       if: github.ref == 'refs/heads/master'
