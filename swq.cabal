@@ -7,7 +7,7 @@ maintainer:         jhr
 author:             jhr
 category:           Web
 
-executable liedle
+executable swq
   default-extensions: OverloadedStrings
   main-is:            Main.hs
   other-modules:
@@ -23,6 +23,7 @@ executable liedle
     , text
     , bytestring
     , regex-tdfa
+    , megaparsec
 
     , wai
     , wai-extra
