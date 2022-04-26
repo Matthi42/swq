@@ -13,6 +13,7 @@ jobs:
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
     # - run: nix build
     # - run: nix flake check
+    - run: nix develop -c npm i
     - run: nix develop -c ./scripts/build
       env:
         DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
