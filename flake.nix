@@ -25,10 +25,14 @@
                     effect
                     prelude
                   ];
+                srcs = [ ./src ];
               })
-            command;
+            command
+            modules;
         in
         {
+          defaultPackage = modules.Main.app { name = "swq"; };
+
           devShell = make-shell {
             packages = with pkgs; [
               entr
@@ -36,11 +40,23 @@
               purs-nix.purescript
               purs-nix.purescript-language-server
               (command { })
-              miniserve
+              # miniserve
+              # closurecompiler
+              nodePackages.parcel-bundler
+              # nodePackages.rimraf
             ];
 
-            aliases.watch = "find src | entr -s 'echo bundling; purs-nix bundle'";
+            aliases = {
+              # docs = "npm run examples-prod && cp docs/logo.png dist && cp docs/Purescript-Concur-Performance.png dist && rimraf docs && mv dist docs";
+            };
           };
+
+          packages =
+            with modules.Main;
+            {
+              bundle = bundle { };
+              output = output { };
+            };
         }
       );
 }

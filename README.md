@@ -3,4 +3,4 @@
 ## Technologie:
 
 - [PureScript](https://book.purescript.org/index.html)
-- [Concur UI](https://ajnsit.github.io/concur-documentation/)
+- [Concur UI](https://github.com/purescript-concur/purescript-concur-react) 
