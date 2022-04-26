@@ -7,6 +7,12 @@ purs-nix bundle
 
 sed 's/script src="[a-zA-Z\.\/]*"/script src=".\/index.js"/g' static/index.html > index.html
 parcel build -d dist --public-url ./ --experimental-scope-hoisting index.html
+
+cat index.js
+cat index.html
+pwd 
+ls -al
+
 rm index.js
 rm index.html
 
