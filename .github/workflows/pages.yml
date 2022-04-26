@@ -11,12 +11,8 @@ jobs:
       with:
         extra_nix_config: |
           access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
-    # - run: nix build
-    # - run: nix flake check
     - run: nix develop -c npm i
     - run: nix develop -c ./scripts/build
-      env:
-        DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
       if: github.ref == 'refs/heads/master'
     - name: Deploy
       uses: peaceiris/actions-gh-pages@v3
