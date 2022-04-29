@@ -1,4 +1,6 @@
 {
+  "name": "swq",
+  "version": "0.0.1",
   "dependencies": {
     "react": "^18.0.0",
     "react-dom": "^18.0.0"

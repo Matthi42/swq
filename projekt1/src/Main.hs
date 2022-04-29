@@ -64,7 +64,7 @@ main = do
     args <- getArgs
     css <- readFileText $ listToMaybe args ?: "./style.css"
     allNumbers <- newIORef []
-    run 3003 $ \request respond -> do
+    run 2804 $ \request respond -> do
         -- print $ rawPathInfo request
         -- print =<< strictRequestBody request
         htmlResult <- runNumberApp allNumbers css request

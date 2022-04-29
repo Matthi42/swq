@@ -98,7 +98,7 @@ filterButtons s = step s $ D.div' (mkFilter <$> filters)
 main :: Effect Unit
 main = do
     runWidgetInDom "main" $ orr
-      [ widget todosWidget "TODO with Purescript"
+      [ widget todosWidget "TODO with Purescript!"
       ]
   where
     widget w s = orr

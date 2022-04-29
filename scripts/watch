@@ -1,2 +1,2 @@
 $TERM -e nix develop -c "$(pwd)/scripts/watch-purs" &
-$TERM -e nix develop -c parcel serve index.html &
+$TERM -e nix develop -c parcel serve static/index.html &

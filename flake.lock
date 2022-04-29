@@ -52,6 +52,22 @@
         "type": "github"
       }
     },
+    "flake-compat": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1627913399,
+        "narHash": "sha256-hY8g6H2KFL8ownSiFeMOjwPC8P0ueXpCVEbxgda3pko=",
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "rev": "12c64ca55c1014cdc1b16ed5a804aa8576601ff2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "edolstra",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "locked": {
         "lastModified": 1618217525,
@@ -111,6 +127,24 @@
         "owner": "ursi",
         "ref": "1",
         "repo": "nix-make-shell",
+        "type": "github"
+      }
+    },
+    "mk-node": {
+      "inputs": {
+        "flake-compat": "flake-compat"
+      },
+      "locked": {
+        "lastModified": 1641743118,
+        "narHash": "sha256-xVCjYKP7qhUe1TpQ35u4SAGN7wop30PHK+88BEIWRJI=",
+        "owner": "sephii",
+        "repo": "mk-node",
+        "rev": "636703574bac46f4047827d2823a6ff1f69c078c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "sephii",
+        "repo": "mk-node",
         "type": "github"
       }
     },
@@ -238,6 +272,7 @@
     "root": {
       "inputs": {
         "make-shell": "make-shell",
+        "mk-node": "mk-node",
         "nixpkgs": "nixpkgs",
         "purs-nix": "purs-nix",
         "utils": "utils_3"
