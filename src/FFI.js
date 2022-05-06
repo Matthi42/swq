@@ -64,3 +64,8 @@ exports.setTimeInterval = function(handler) {
     };
   };
 };
+
+// react
+// Button.js
+exports.classButton =  require('@mui/material/Button').default
+

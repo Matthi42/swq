@@ -256,13 +256,17 @@
         "utils": "utils_2"
       },
       "locked": {
-        "narHash": "sha256-inspdmal/lezUldaSVeve5bSHjk5ckkD2NzJvW4A1/Y=",
-        "path": "/nix/store/x2kvn44h0yngikz1nibjxfskb25vw5b6-source/purs-nix",
-        "type": "path"
+        "lastModified": 1650316660,
+        "narHash": "sha256-CX5hQpaXsaKC3wa0jmpNyZyi4p2+mCd9cLmyVC93tv0=",
+        "owner": "ursi",
+        "repo": "purs-nix",
+        "rev": "b2f7d7872ce43a63105f9b34b48f5ce8492d3725",
+        "type": "github"
       },
       "original": {
-        "path": "/nix/store/x2kvn44h0yngikz1nibjxfskb25vw5b6-source/purs-nix",
-        "type": "path"
+        "owner": "ursi",
+        "repo": "purs-nix",
+        "type": "github"
       }
     },
     "root": {

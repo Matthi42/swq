@@ -3,6 +3,7 @@ module Test.FFI where
 import Data.Nullable (Nullable)
 import Data.Unit (Unit)
 import Effect (Effect)
+import React (ReactClass)
 
 -- FFI Common to all examples
 
@@ -20,3 +21,6 @@ foreign import handleKeyboardEvents :: (Array String -> Effect Unit) -> Effect (
 -- Time Interval events. Calls a handler on each timeout.
 -- Returns a function which can be called to remove the event listeners
 foreign import setTimeInterval :: Effect Unit -> Effect (Effect Unit)
+
+-- react
+foreign import classButton :: forall a. ReactClass a

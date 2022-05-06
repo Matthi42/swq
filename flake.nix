@@ -2,8 +2,8 @@
   inputs = {
     make-shell.url = "github:ursi/nix-make-shell/1";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
-    # purs-nix.url = "github:ursi/purs-nix";
-    purs-nix.url = "./purs-nix";
+    purs-nix.url = "github:ursi/purs-nix";
+    # purs-nix.url = "./purs-nix";
     purs-nix.inputs.nixpkgs.follows = "nixpkgs";
     mk-node.url = "github:sephii/mk-node";
     mk-node.inputs.nixpkgs.follows = "nixpkgs";
@@ -30,7 +30,7 @@
                 console
                 effect
                 prelude
-                purescript-react-mui
+                # purescript-react-mui
               ];
             srcs = [ ./src ];
           };

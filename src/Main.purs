@@ -20,9 +20,9 @@ import Data.String.CodePoints (drop, take)
 import Data.Traversable (traverse)
 import Effect.Class (liftEffect)
 import Effect (Effect)
-import Test.FFI (storageGet, storageSet)
+import Test.FFI (storageGet, storageSet, classButton)
 
-import MaterialUI.Button (classButton)
+-- import MaterialUI.Button (classButton)
 
 import Concur.React.DOM (El, el')
 import React (unsafeCreateElement)
@@ -98,7 +98,7 @@ todo p t = if runFilter p t
 filterButtons :: Todos -> Signal HTML Todos
 filterButtons s = step s $ D.div' (mkFilter <$> filters)
   where
-    mkFilter f = D.button [select f, defer (\_ -> filterButtons (s {filter = f})) <$ P.onClick] [D.text (show f)]
+    mkFilter f = button [select f, defer (\_ -> filterButtons (s {filter = f})) <$ P.onClick] [D.text (show f)]
     filters = [All, Active, Completed]
     select f = if s.filter == f
       then P.style {border:"2px solid lightgray"}
