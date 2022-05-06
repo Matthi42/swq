@@ -2,7 +2,8 @@
   inputs = {
     make-shell.url = "github:ursi/nix-make-shell/1";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
-    purs-nix.url = "github:ursi/purs-nix";
+    # purs-nix.url = "github:ursi/purs-nix";
+    purs-nix.url = "./purs-nix";
     purs-nix.inputs.nixpkgs.follows = "nixpkgs";
     mk-node.url = "github:sephii/mk-node";
     mk-node.inputs.nixpkgs.follows = "nixpkgs";
@@ -15,29 +16,32 @@
       ({ make-shell, pkgs, purs-nix, system, ... }:
         let
           inherit (purs-nix) ps-pkgs purs;
-
-          inherit
-            (purs
-              {
-                dependencies =
-                  with ps-pkgs;
-                  [
-                    concur-core
-                    concur-react
-                    console
-                    effect
-                    prelude
-                  ];
-                srcs = [ ./src ];
-              })
-            command
-            modules;
+          # args' = {
+          #   inherit pkgs; 
+          #   utils = import "${inputs.purs-nix}/utils.nix" system;
+          # };
+          # inherit (import "${inputs.purs-nix}/build-pkgs.nix" args') build;
+          # ps-pkgs' = pkgs.lib.mapAttrs build (import ./ps-pkgs.nix ps-pkgs);
+          purs' = purs {
+            dependencies =
+              with ps-pkgs; [
+                concur-core
+                concur-react
+                console
+                effect
+                prelude
+                purescript-react-mui
+              ];
+            srcs = [ ./src ];
+          };
+          inherit (purs') command modules;
           nodeModules = pkgs.mkNodeModules { src = ./.; };
         in
         {
-          defaultPackage = let #modules.Main.app { name = "swq"; };
-            bundle = modules.Main.bundle { };
-          in
+          defaultPackage =
+            let #modules.Main.app { name = "swq"; };
+              bundle = modules.Main.bundle { };
+            in
             pkgs.stdenv.mkDerivation {
               name = "swq";
               src = ./.;
