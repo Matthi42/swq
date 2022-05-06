@@ -257,11 +257,11 @@
       },
       "locked": {
         "narHash": "sha256-inspdmal/lezUldaSVeve5bSHjk5ckkD2NzJvW4A1/Y=",
-        "path": "/nix/store/40zv8x71304z2807lqihpkgvd04z8khk-source/purs-nix",
+        "path": "/nix/store/x2kvn44h0yngikz1nibjxfskb25vw5b6-source/purs-nix",
         "type": "path"
       },
       "original": {
-        "path": "/nix/store/40zv8x71304z2807lqihpkgvd04z8khk-source/purs-nix",
+        "path": "/nix/store/x2kvn44h0yngikz1nibjxfskb25vw5b6-source/purs-nix",
         "type": "path"
       }
     },

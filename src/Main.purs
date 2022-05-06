@@ -22,6 +22,15 @@ import Effect.Class (liftEffect)
 import Effect (Effect)
 import Test.FFI (storageGet, storageSet)
 
+import MaterialUI.Button (classButton)
+
+import Concur.React.DOM (El, el')
+import React (unsafeCreateElement)
+import React.DOM.Props (unsafeFromPropsArray)
+
+button :: El
+button = el' (unsafeCreateElement classButton <<< unsafeFromPropsArray)
+
 -- A proof of concept, Mini TodoMVC with Signals!
 -- Supports Todo creation, completion, editing, and deletion.
 
