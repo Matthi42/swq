@@ -30,6 +30,11 @@
                 console
                 effect
                 prelude
+                simple-json
+                spec
+                quickcheck
+                spec-quickcheck
+                # spec-mocha
                 # purescript-react-mui
               ];
             srcs = [ ./src ];
@@ -46,7 +51,11 @@
               name = "swq";
               src = ./.;
               dontBuild = true;
-              buildInputs = with pkgs; [ nodePackages.parcel-bundler ];
+              buildInputs = with pkgs; [ 
+                nodePackages.parcel-bundler
+                # nodePackages.mocha
+                # nodePackages.pulp
+              ];
               installPhase = ''
                 # set -xe 
 
@@ -68,10 +77,15 @@
             packages = with pkgs; [
               entr
               # nodejs
-              (command { })
+              (command { package.pursuit = {
+                name = "kontaktsplitter";
+                license.spdxId = "BSD";
+                repo = "https://github.com/Matthi42/swq";
+              }; })
               purs-nix.purescript
               purs-nix.purescript-language-server
               nodePackages.parcel-bundler
+              # nodePackages.mocha
               nodeModules
               # miniserve
               # closurecompiler

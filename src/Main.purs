@@ -3,37 +3,123 @@ module Main where
 import Prelude
 
 import Concur.Core (Widget)
-import Concur.Core.FRP (Signal, always, dyn, loopS, loopW, fireOnce_, step)
-import Concur.Core.Patterns (retryUntil)
+-- import Concur.Core.FRP (Signal, always, dyn, loopS, loopW, fireOnce_, step)
+-- import Concur.Core.Patterns (retryUntil)
 import Concur.React (HTML)
 import Concur.React.DOM as D
 import Concur.React.Props as P
 import Concur.React.Run (runWidgetInDom)
-import Concur.React.Widgets (textInputEnter)
-import Control.Lazy (defer)
+-- import Concur.React.Widgets (textInputEnter)
+-- import Control.Lazy (defer)
+import Control.Monad.Error.Class (throwError)
 import Control.MultiAlternative (orr)
-import Data.Array (catMaybes, cons, intercalate)
+-- import Data.Array (catMaybes, cons, intercalate)
+import Data.Either (Either(..))
+-- import Data.Generic.Rep as Rep
+import Data.List.NonEmpty (singleton)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Nullable (toMaybe)
-import Data.String (Pattern(..), codePointFromChar, countPrefix, null, split)
-import Data.String.CodePoints (drop, take)
-import Data.Traversable (traverse)
-import Effect.Class (liftEffect)
+-- import Data.String (Pattern(..), codePointFromChar, countPrefix, null, split)
+-- import Data.String.CodePoints (drop, take)
+-- import Data.Traversable (traverse)
 import Effect (Effect)
-import Test.FFI (storageGet, storageSet, classButton)
+import Effect.Class (liftEffect)
+import FFI (storageGet, storageSet)
+import Foreign (ForeignError(..), readString)
+import Simple.JSON (class ReadForeign, readJSON, writeJSON)
+import UI as MUI
+import Style as UI
 
--- import MaterialUI.Button (classButton)
+------------------- MODEL ---------------- {{{
 
-import Concur.React.DOM (El, el')
-import React (unsafeCreateElement)
-import React.DOM.Props (unsafeFromPropsArray)
+data Geschlecht = M | W
+type Titel = String
+type Anrede = 
+    { anrTitel    :: Array Titel
+    , anrVorname  :: Maybe String 
+    , anrNachname :: String 
+    }
+type Data = Array Anrede
 
-button :: El
-button = el' (unsafeCreateElement classButton <<< unsafeFromPropsArray)
+type Model = 
+    { mData :: Data 
+    , mT :: String 
+    }
 
--- A proof of concept, Mini TodoMVC with Signals!
--- Supports Todo creation, completion, editing, and deletion.
+initialModel :: Model 
+initialModel = 
+    { mData: []
+    , mT: "Hi"
+    }
 
+-- }}}
+
+------------------- VIEW ------------------- {{{
+
+view :: Model -> Widget HTML Msg
+view model = orr 
+      [ D.style [] [ D.text UI.kontaktCSS ]
+      , UI.toolbar 
+      , D.div [ P.className "container" ]
+          [ Add <$> 
+              D.input [P._type "text", P.value model.mT, P.unsafeTargetValue <$> P.onChange]
+          , D.text model.mT 
+          ] 
+      ]
+
+-- }}}
+
+------------------- MESSAGES / UPDATE ------------------ {{{
+
+data Msg = Add String
+
+------------------- UPDATE --------------------
+
+update :: Model -> Msg -> Model
+update model (Add a) = model{ mT = a }
+
+-- }}}
+
+------------------- STORAGE ------------------- {{{
+
+localStorageKey :: String
+localStorageKey = "kontakte"
+
+instance geschlechtReadForeign :: ReadForeign Geschlecht where
+  readImpl f = readString f >>= \s -> case s of
+    "M" -> pure M 
+    "W" -> pure W
+    _ -> throwError $ singleton $ ForeignError "Geschlecht konnte nicht gelesen werden."
+
+-- }}}
+
+------------------- MAIN --------------------- {{{
+
+main :: Effect Unit
+main = do 
+  dataInStorage <- liftEffect $ storageGet localStorageKey
+  let stored = (eitherToMaybe <<< readJSON) =<< toMaybe dataInStorage
+      model = initialModel { mData = fromMaybe [] stored }
+      writeToStorage = liftEffect <<< storageSet localStorageKey <<< writeJSON
+      go m = do
+         msg <- view m
+         let model' = update m msg 
+         writeToStorage model'.mData 
+         go model'
+  runWidgetInDom "main" $ go model
+
+-- }}}
+
+------------------- HELPER -------------------- {{{
+
+eitherToMaybe :: forall a b. Either a b -> Maybe b
+eitherToMaybe (Left _) = Nothing
+eitherToMaybe (Right r) = Just r
+
+-- }}}
+
+------------------- OLD ------------------- {{{
+{-
 data Filter = All | Active | Completed
 derive instance eqFilter :: Eq Filter
 instance showFilter :: Show Filter where
@@ -43,7 +129,9 @@ instance showFilter :: Show Filter where
 
 type Todo = {name :: String, done :: Boolean}
 type Todos = {filter :: Filter, todos :: Array Todo}
-
+type Model = {todos :: Array Todo}
+-- derive instance repGenericTodos :: Rep.Generic Todos _
+-- derive instance rfTodos :: ReadForeign Todos
 serialiseTodos :: Array Todo -> String
 serialiseTodos todosArr = intercalate "\n" (map serialiseTodo todosArr)
   where serialiseTodo {name, done} = name <> "\t" <> if done then "T" else "F"
@@ -62,7 +150,7 @@ todosWidget :: forall a. Widget HTML a
 todosWidget = do
   savedTodosNullable <- liftEffect $ storageGet localStorageKey
   let savedTodos = fromMaybe [] $ map deserialiseTodos $ toMaybe savedTodosNullable
-  dyn $ todos {filter: All, todos: savedTodos}
+  dyn $ mkTodos {filter: All, todos: savedTodos}
 
 mkTodo :: Array Todo -> Signal HTML (Array Todo)
 mkTodo ts = loopW ts \ts' -> D.div' $ pure do
@@ -70,8 +158,8 @@ mkTodo ts = loopW ts \ts' -> D.div' $ pure do
   let newTodos = cons {name: s, done: false} ts'
   pure newTodos
 
-todos :: Todos -> Signal HTML Todos
-todos s = loopS s \s' -> do
+mkTodos :: Todos -> Signal HTML Todos
+mkTodos s = loopS s \s' -> do
   ts <- mkTodo s'.todos
   ts' <- map catMaybes (traverse (todo s'.filter) ts)
   fireOnce_ $ liftEffect $ storageSet localStorageKey (serialiseTodos ts')
@@ -98,20 +186,9 @@ todo p t = if runFilter p t
 filterButtons :: Todos -> Signal HTML Todos
 filterButtons s = step s $ D.div' (mkFilter <$> filters)
   where
-    mkFilter f = button [select f, defer (\_ -> filterButtons (s {filter = f})) <$ P.onClick] [D.text (show f)]
+    mkFilter f = UI.button [select f, defer (\_ -> filterButtons (s {filter = f})) <$ P.onClick] [D.text (show f)]
     filters = [All, Active, Completed]
     select f = if s.filter == f
       then P.style {border:"2px solid lightgray"}
       else P.style {}
-
-main :: Effect Unit
-main = do
-    runWidgetInDom "main" $ orr
-      [ widget todosWidget "TODO with Purescript!"
-      ]
-  where
-    widget w s = orr
-      [ D.hr'
-      , D.h2_ [] $ D.text s
-      , D.div_ [] w
-      ]
+      }}} -}
