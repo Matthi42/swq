@@ -34,6 +34,10 @@
                 spec
                 quickcheck
                 spec-quickcheck
+                # react-basic
+                # react-basic-classic
+                # react-basic-mui
+                parsing
                 # spec-mocha
                 # purescript-react-mui
               ];
@@ -63,10 +67,10 @@
                 # export PATH="${nodeModules}/bin:$PATH"
 
                 cp ${bundle} index.js
-                sed 's/script src="[a-zA-Z\.\/]*"/script src=".\/index.js"/g' ./static/index.html > index.html
-                parcel build -d $out --public-url ./ --experimental-scope-hoisting index.html
+                # ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level SIMPLE_OPTIMIZATIONS --js index.js --js_output_file index.prod.js
 
-                # closure-compiler --compilation_level ADVANCED_OPTIMIZATIONS --js tmp/*.js --js_output_file tmp/index.prod.minified.js
+                sed 's/script src="[a-zA-Z\.\/]*"/script src=".\/index.js"/g' ./static/index.html > index.html
+                parcel build -d $out --public-url ./ index.html # --experimental-scope-hoisting 
 
                 # rm index.html
                 # rm -rf ./node_modules
@@ -85,10 +89,11 @@
               purs-nix.purescript
               purs-nix.purescript-language-server
               nodePackages.parcel-bundler
+              nodePackages.npm
+              nodePackages.purty
               # nodePackages.mocha
               nodeModules
-              # miniserve
-              # closurecompiler
+              miniserve
               # nodePackages.rimraf
             ];
 
@@ -96,6 +101,7 @@
               # docs = "npm run examples-prod && cp docs/logo.png dist && cp docs/Purescript-Concur-Performance.png dist && rimraf docs && mv dist docs";
             };
             setup = ''
+              rm node_modules
               ln -fs ${nodeModules}/lib/node_modules ./node_modules
               export NODE_PATH="${nodeModules}/lib/node_modules" 
               # export PATH="${nodeModules}/bin:$PATH"

@@ -3,8 +3,7 @@ module Main where
 import Prelude
 
 import Concur.Core (Widget)
--- import Concur.Core.FRP (Signal, always, dyn, loopS, loopW, fireOnce_, step)
--- import Concur.Core.Patterns (retryUntil)
+import Effect.Console (logShow)
 import Concur.React (HTML)
 import Concur.React.DOM as D
 import Concur.React.Props as P
@@ -15,81 +14,176 @@ import Control.Monad.Error.Class (throwError)
 import Control.MultiAlternative (orr)
 -- import Data.Array (catMaybes, cons, intercalate)
 import Data.Either (Either(..))
--- import Data.Generic.Rep as Rep
+import Data.Generic.Rep (class Generic)
+import Data.Show.Generic (genericShow)
 import Data.List.NonEmpty (singleton)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.List (find)
+import Data.Maybe (Maybe(..), fromJust)
+import Partial.Unsafe (unsafePartial)
 import Data.Nullable (toMaybe)
--- import Data.String (Pattern(..), codePointFromChar, countPrefix, null, split)
--- import Data.String.CodePoints (drop, take)
--- import Data.Traversable (traverse)
 import Effect (Effect)
+import Effect.Unsafe (unsafePerformEffect)
 import Effect.Class (liftEffect)
 import FFI (storageGet, storageSet)
 import Foreign (ForeignError(..), readString)
-import Simple.JSON (class ReadForeign, readJSON, writeJSON)
-import UI as MUI
-import Style as UI
+import Simple.JSON (class ReadForeign, class WriteForeign, readJSON, writeJSON, writeImpl)
+import Style as Style
+import Text.Parsing.Parser (Parser, runParser, parseErrorMessage)
+import Text.Parsing.Parser.String (char)
+import Control.Alt ((<|>))
+import Concur.React.MUI.DOM as MD
+-- import Data.Array (many)
 
 ------------------- MODEL ---------------- {{{
 
 data Geschlecht = M | W
+data Sprache = Deutsch | Englisch
+
+derive instance genericSprache :: Generic Sprache _
+instance showSprache :: Show Sprache where show = genericShow
+derive instance genericGeschlecht :: Generic Geschlecht _
+instance showGeschlecht :: Show Geschlecht where show = genericShow
+
 type Titel = String
+
 type Anrede = 
-    { anrTitel    :: Array Titel
-    , anrVorname  :: Maybe String 
-    , anrNachname :: String 
+    { geschlecht :: Maybe Geschlecht
+    , titel      :: Array Titel
+    , sprache    :: Sprache
+    , vorname    :: Maybe String 
+    , nachname   :: String 
     }
-type Data = Array Anrede
+
+-- | Diese Daten werden persistiert und beschreiben die Domäne.
+type Data = 
+    { anreden :: Array Anrede
+    , titel   :: Array String
+    }
+
+data Result 
+    = NothingYet
+    | Failed String 
+    | Success Anrede
+
+derive instance genericResult :: Generic Result _
+instance showResult :: Show Result where show = genericShow
 
 type Model = 
     { mData :: Data 
-    , mT :: String 
+    , mState :: Result
     }
 
 initialModel :: Model 
 initialModel = 
-    { mData: []
-    , mT: "Hi"
+    { mData:
+      { anreden: []
+      , titel: 
+        [ "Dr. rer. nat." 
+        , "Dr. h.c."
+        , "Dr.-Ing"
+        , "Dr."
+        , "Prof." 
+        , "Doktor"
+        , "Professor"
+        ]
+      }
+    , mState: NothingYet
     }
 
 -- }}}
 
 ------------------- VIEW ------------------- {{{
 
+-- https://v4.mui.com/components/app-bar/
+-- https://github.com/ajnsit/purescript-concur-react-mui/blob/master/examples/src/Calc.purs
+
 view :: Model -> Widget HTML Msg
 view model = orr 
-      [ D.style [] [ D.text UI.kontaktCSS ]
-      , UI.toolbar 
-      , D.div [ P.className "container" ]
-          [ Add <$> 
-              D.input [P._type "text", P.value model.mT, P.unsafeTargetValue <$> P.onChange]
-          , D.text model.mT 
-          ] 
+      [ D.style [] [ D.text Style.kontaktCSS ]
+      , MD.appBar []
+        [ MD.toolbar []
+          [ MD.container [ P.className "header" ]
+            [ MD.typography [ P.unsafeMkProp "variant" "h4" ] [D.text "Kontaktsplitter"]
+            , MD.button 
+              [ P.href "/docs", P.unsafeMkProp "variant" "contained" ] 
+              [ D.text "Dokumentation" ] 
+            , MD.button 
+              [ P.href "/tests", P.unsafeMkProp "variant" "contained" ] 
+              [ D.text "Testergebnisse" ] 
+            ]
+          ]
+        ] 
+      , MD.container []
+        [ MD.box [ P.style {marginTop: "80px"} ]
+          [ Insert <$> inputView model
+          , Edit <$> editView model ] 
+          ]
       ]
+
+inputView :: Model -> Widget HTML InsertMsg
+inputView model = D.div [] 
+      [ Input <$> 
+          D.input [P._type "text", P.unsafeTargetValue <$> P.onChange]
+      , D.text $ show model.mState 
+      ]
+
+editView :: Model -> Widget HTML EditMsg
+editView model = D.div [] 
+    [ ChangeGeschlecht <$> select [{l: "Keine Angabe", t: Nothing}, {l: "M", t: Just M}, {l: "W", t: Just W}]      ]
+
+-- https://github.com/labordynamicsinstitute/metajelo-ui/blob/master/src/Metajelo/FormUtil.purs
+select :: forall a. Array {l :: String, t :: a} -> Widget HTML a
+select opts = (D.select [ (unsafeToA <<< P.unsafeTargetValue) <$> P.onChange] $ 
+        map (\{l} -> D.option [] [ D.text l ]) opts)
+    where unsafeToA :: String -> a
+          unsafeToA a = (unsafePartial $ fromJust $ find (((==) a) <<< _.l) opts).t
 
 -- }}}
 
 ------------------- MESSAGES / UPDATE ------------------ {{{
 
-data Msg = Add String
+data InsertMsg = Input String
+data EditMsg = ChangeGeschlecht (Maybe Geschlecht)
+
+data Msg = Insert InsertMsg
+         | Edit EditMsg
+
+derive instance genericMsg :: Generic Msg _
+instance showMsg :: Show Msg where show = genericShow
+
+derive instance genericIMsg :: Generic InsertMsg _
+instance showIMsg :: Show InsertMsg where show = genericShow
+
+derive instance genericEMsg :: Generic EditMsg _
+instance showEMsg :: Show EditMsg where show = genericShow
 
 ------------------- UPDATE --------------------
 
 update :: Model -> Msg -> Model
-update model (Add a) = model{ mT = a }
+update model (Insert msg) = case msg of 
+    Input input -> model { mState = parseKontakt model.mData input }
+update model (Edit msg) = case model.mState of 
+    Success anrede -> 
+        case msg of 
+             ChangeGeschlecht ges -> 
+                 model { mState = Success $ anrede { geschlecht = ges } }
+    _ -> model
 
--- }}}
+parseKontakt :: Data -> String -> Result
+parseKontakt dat = showError <<< flip runParser (pKontakt dat)
+    where showError (Left err) = Failed $ parseErrorMessage err
+          showError (Right suc) = Success suc
 
-------------------- STORAGE ------------------- {{{
-
-localStorageKey :: String
-localStorageKey = "kontakte"
-
-instance geschlechtReadForeign :: ReadForeign Geschlecht where
-  readImpl f = readString f >>= \s -> case s of
-    "M" -> pure M 
-    "W" -> pure W
-    _ -> throwError $ singleton $ ForeignError "Geschlecht konnte nicht gelesen werden."
+pKontakt :: Data -> Parser String Anrede
+pKontakt dat = do 
+  _ <- char 'a'
+  b <- char 'b' <|> char 'B'
+  pure { geschlecht: Nothing 
+       , titel: []
+       , sprache: Deutsch
+       , vorname: Nothing
+       , nachname: ""
+       }
 
 -- }}}
 
@@ -99,10 +193,13 @@ main :: Effect Unit
 main = do 
   dataInStorage <- liftEffect $ storageGet localStorageKey
   let stored = (eitherToMaybe <<< readJSON) =<< toMaybe dataInStorage
-      model = initialModel { mData = fromMaybe [] stored }
+      model = case stored of
+            Just stored' -> initialModel { mData = stored' }
+            Nothing -> initialModel
       writeToStorage = liftEffect <<< storageSet localStorageKey <<< writeJSON
       go m = do
          msg <- view m
+         let _ = unsafePerformEffect $ logShow msg
          let model' = update m msg 
          writeToStorage model'.mData 
          go model'
@@ -115,6 +212,33 @@ main = do
 eitherToMaybe :: forall a b. Either a b -> Maybe b
 eitherToMaybe (Left _) = Nothing
 eitherToMaybe (Right r) = Just r
+
+-- }}}
+
+------------------- STORAGE ------------------- {{{
+                  
+localStorageKey :: String
+localStorageKey = "kontakte"
+
+instance geschlechtReadForeign :: ReadForeign Geschlecht where
+  readImpl f = readString f >>= \s -> case s of
+    "M" -> pure M 
+    "W" -> pure W
+    _ -> throwError $ singleton $ ForeignError "Geschlecht konnte nicht gelesen werden."
+
+instance spracheReadForeign :: ReadForeign Sprache where
+  readImpl f = readString f >>= \s -> case s of
+    "Deutsch" -> pure Deutsch 
+    "Englisch" -> pure Englisch
+    _ -> throwError $ singleton $ ForeignError "Sprache konnte nicht gelesen werden."
+
+instance spracheWriteForeign :: WriteForeign Sprache where
+  writeImpl Deutsch = writeImpl "Deutsch" 
+  writeImpl Englisch = writeImpl "Englisch" 
+
+instance geschlechtWriteForeign :: WriteForeign Geschlecht where
+  writeImpl M = writeImpl "M" 
+  writeImpl W = writeImpl "W" 
 
 -- }}}
 

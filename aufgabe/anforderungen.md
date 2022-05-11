@@ -29,6 +29,11 @@
 ## Design 
  Was genau soll gemacht werden??????????????????????????
 
+### Annahmen
+
+- Titel sind sprachenagnostisch, d.h. sie bleiben in allen Sprachen gleich 
+- Sprache wird aus der Anrede / Geschlecht erkannt und kann noch angepasst werden
+
 ### Grobe Modellierung 
 
 
