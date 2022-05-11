@@ -1,2 +1,2 @@
-$TERM -e nix develop -c "$(pwd)/scripts/watch-purs" &
-sleep 1 && $TERM -e nix develop -c parcel serve static/index.html &
+#!/bin/sh
+$TERM -e nix develop -c tmux new-session \; send-keys 'exec ./scripts/watch-purs' C-m \; split-window -v \; send-keys 'exec parcel serve static/index.html' C-m &

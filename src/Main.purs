@@ -1,18 +1,19 @@
 module Main where
 
 import Prelude
-
 import Concur.Core (Widget)
+import Concur.Core.Props (Props)
 import Effect.Console (logShow)
 import Concur.React (HTML)
 import Concur.React.DOM as D
 import Concur.React.Props as P
 import Concur.React.Run (runWidgetInDom)
+import React.DOM.Props (Props) as RP
 -- import Concur.React.Widgets (textInputEnter)
 -- import Control.Lazy (defer)
 import Control.Monad.Error.Class (throwError)
 import Control.MultiAlternative (orr)
--- import Data.Array (catMaybes, cons, intercalate)
+import Data.Array ((:)) --(catMaybes, cons, intercalate)
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
 import Data.Show.Generic (genericShow)
@@ -32,215 +33,326 @@ import Text.Parsing.Parser (Parser, runParser, parseErrorMessage)
 import Text.Parsing.Parser.String (char)
 import Control.Alt ((<|>))
 import Concur.React.MUI.DOM as MD
+
 -- import Data.Array (many)
+------------------- MODEL ----------------
+data Geschlecht
+  = M
+  | W
 
-------------------- MODEL ---------------- {{{
+data Sprache
+  = Deutsch
+  | Englisch
 
-data Geschlecht = M | W
-data Sprache = Deutsch | Englisch
+type Titel
+  = String
 
-derive instance genericSprache :: Generic Sprache _
-instance showSprache :: Show Sprache where show = genericShow
-derive instance genericGeschlecht :: Generic Geschlecht _
-instance showGeschlecht :: Show Geschlecht where show = genericShow
-
-type Titel = String
-
-type Anrede = 
-    { geschlecht :: Maybe Geschlecht
-    , titel      :: Array Titel
-    , sprache    :: Sprache
-    , vorname    :: Maybe String 
-    , nachname   :: String 
+type Anrede
+  = { geschlecht :: Maybe Geschlecht
+    , titel :: Array Titel
+    , sprache :: Sprache
+    , vorname :: Maybe String
+    , nachname :: String
     }
 
 -- | Diese Daten werden persistiert und beschreiben die Domäne.
-type Data = 
-    { anreden :: Array Anrede
-    , titel   :: Array String
+type Data
+  = { anreden :: Array Anrede
+    , titel :: Array String
     }
 
-data Result 
-    = NothingYet
-    | Failed String 
-    | Success Anrede
+------------------- STATE  ------------------
+data Result
+  = NothingYet
+  | Failed String
+  | Success Anrede
 
-derive instance genericResult :: Generic Result _
-instance showResult :: Show Result where show = genericShow
+data AppMode
+  = InsertMode
+  | EditMode
 
-type Model = 
-    { mData :: Data 
-    , mState :: Result
+type Model
+  = { _data :: Data
+    , state :: Result
+    , inputRaw :: String
+    , mode :: AppMode
     }
 
-initialModel :: Model 
-initialModel = 
-    { mData:
+initialModel :: Model
+initialModel =
+  { _data:
       { anreden: []
-      , titel: 
-        [ "Dr. rer. nat." 
-        , "Dr. h.c."
-        , "Dr.-Ing"
-        , "Dr."
-        , "Prof." 
-        , "Doktor"
-        , "Professor"
-        ]
+      , titel:
+          [ "Dr. rer. nat."
+          , "Dr. h.c."
+          , "Dr.-Ing"
+          , "Dr."
+          , "Prof."
+          , "Doktor"
+          , "Professor"
+          ]
       }
-    , mState: NothingYet
-    }
+  , state: NothingYet
+  , inputRaw: ""
+  , mode: InsertMode
+  }
 
--- }}}
+------------------- MESSAGES  ------------------
+data InsertMsg
+  = Input String
+  | GoEdit
 
-------------------- VIEW ------------------- {{{
+data EditMsg
+  = ChangeGeschlecht (Maybe Geschlecht)
+  | Save
 
+data Msg
+  = Insert InsertMsg
+  | Edit EditMsg
+
+------------------- VIEW -------------------
 -- https://v4.mui.com/components/app-bar/
 -- https://github.com/ajnsit/purescript-concur-react-mui/blob/master/examples/src/Calc.purs
-
 view :: Model -> Widget HTML Msg
-view model = orr 
-      [ D.style [] [ D.text Style.kontaktCSS ]
-      , MD.appBar []
+view model =
+  orr
+    [ D.style [] [ D.text Style.kontaktCSS ]
+    , MD.appBar []
         [ MD.toolbar []
-          [ MD.container [ P.className "header" ]
-            [ MD.typography [ P.unsafeMkProp "variant" "h4" ] [D.text "Kontaktsplitter"]
-            , MD.button 
-              [ P.href "/docs", P.unsafeMkProp "variant" "contained" ] 
-              [ D.text "Dokumentation" ] 
-            , MD.button 
-              [ P.href "/tests", P.unsafeMkProp "variant" "contained" ] 
-              [ D.text "Testergebnisse" ] 
+            [ MD.container [ P.className "header" ]
+                [ MD.typography [ P.unsafeMkProp "variant" "h4" ] [ D.text "Kontaktsplitter" ]
+                , MD.button
+                    [ P.href "/docs", P.unsafeMkProp "variant" "contained" ]
+                    [ D.text "Dokumentation" ]
+                , MD.button
+                    [ P.href "/tests", P.unsafeMkProp "variant" "contained" ]
+                    [ D.text "Testergebnisse" ]
+                ]
             ]
-          ]
-        ] 
-      , MD.container []
-        [ MD.box [ P.style {marginTop: "80px"} ]
-          [ Insert <$> inputView model
-          , Edit <$> editView model ] 
-          ]
-      ]
+        ]
+    , MD.container []
+        [ MD.box [ P.style { marginTop: "80px" }, P.className "content" ]
+            [ Insert <$> inputView model
+            , Edit <$> editView model
+            , D.p_ [] $ D.text $ show model.state
+            ]
+        ]
+    ]
 
 inputView :: Model -> Widget HTML InsertMsg
-inputView model = D.div [] 
-      [ Input <$> 
-          D.input [P._type "text", P.unsafeTargetValue <$> P.onChange]
-      , D.text $ show model.mState 
-      ]
+inputView model =
+  D.div [ P.style { display: "flex" } ]
+    [ Input
+        <$> MD.textField
+            [ P.label "Kontakt hier eingeben"
+            , P.value model.inputRaw
+            , P.placeholder "Herr Dr. Peter Pan"
+            , P.unsafeTargetValue <$> P.onChange
+            , P.unsafeMkProp "variant" "outlined"
+            , P.disabled $ model.mode == EditMode
+            , P.style { flexGrow: "1" }
+            ]
+            []
+    , GoEdit
+        <$ MD.button
+            [ P.color "primary"
+            , P.unsafeMkProp "variant" "contained"
+            , P.style { marginLeft: "1rem" }
+            , P.disabled $ model.mode == EditMode
+            , P.onClick
+            ]
+            [ D.text "✏ Bearbeiten" ]
+    ]
 
 editView :: Model -> Widget HTML EditMsg
-editView model = D.div [] 
-    [ ChangeGeschlecht <$> select [{l: "Keine Angabe", t: Nothing}, {l: "M", t: Just M}, {l: "W", t: Just W}]      ]
+editView model = case model.state of
+  NothingYet ->
+    MD.paper
+      [ P.className "error-msg"
+      , P.style { backgroundColor: "lightgray" }
+      , P.unsafeMkProp "variant" "outlined"
+      ]
+      [ D.p_ [] $ D.text "Bitte Kontakt eingeben!" ]
+  Failed error ->
+    MD.paper
+      [ P.className "error-msg"
+      , P.unsafeMkProp "variant" "outlined"
+      ]
+      [ D.p_ [] $ D.text error ]
+  Success anrede ->
+    D.div [ P.style { display: "flex" } ]
+      [ ChangeGeschlecht
+          <$> MD.formControl []
+              [ MD.inputLabel [ P.htmlFor "geschlecht" ] [ D.text "Geschlecht" ]
+              , select
+                  [ P._id "geschlecht"
+                  , P.label "Geschlecht"
+                  , P.disabled $ model.mode == InsertMode
+                  ]
+                  anrede.geschlecht
+                  [ { l: "Keine Angabe", t: Nothing }
+                  , { l: "M", t: Just M }
+                  , { l: "W", t: Just W }
+                  ]
+              ]
+      , Save
+          <$ MD.button
+              [ P.color "primary"
+              , P.unsafeMkProp "variant" "contained"
+              , P.style { marginLeft: "auto", marginRight: 0 }
+              , P.disabled $ model.mode == InsertMode
+              , P.onClick
+              ]
+              [ D.text "✔ Speichern" ]
+      ]
 
 -- https://github.com/labordynamicsinstitute/metajelo-ui/blob/master/src/Metajelo/FormUtil.purs
-select :: forall a. Array {l :: String, t :: a} -> Widget HTML a
-select opts = (D.select [ (unsafeToA <<< P.unsafeTargetValue) <$> P.onChange] $ 
-        map (\{l} -> D.option [] [ D.text l ]) opts)
-    where unsafeToA :: String -> a
-          unsafeToA a = (unsafePartial $ fromJust $ find (((==) a) <<< _.l) opts).t
+select :: forall a. Eq a => Array (Props RP.Props a) -> a -> Array { l :: String, t :: a } -> Widget HTML a
+select props selected opts =
+  MD.select
+    ([ (unsafeToA <<< P.unsafeTargetValue) <$> P.onChange, P.value findSelected ] <> props)
+    $ map (\{ l } -> MD.menuItem [ P.value l ] [ D.text l ]) opts
+  where
+  unsafeToA a = (unsafePartial $ fromJust $ find (((==) a) <<< _.l) opts).t
 
--- }}}
-
-------------------- MESSAGES / UPDATE ------------------ {{{
-
-data InsertMsg = Input String
-data EditMsg = ChangeGeschlecht (Maybe Geschlecht)
-
-data Msg = Insert InsertMsg
-         | Edit EditMsg
-
-derive instance genericMsg :: Generic Msg _
-instance showMsg :: Show Msg where show = genericShow
-
-derive instance genericIMsg :: Generic InsertMsg _
-instance showIMsg :: Show InsertMsg where show = genericShow
-
-derive instance genericEMsg :: Generic EditMsg _
-instance showEMsg :: Show EditMsg where show = genericShow
+  findSelected = (unsafePartial $ fromJust $ find (((==) selected) <<< _.t) opts).l
 
 ------------------- UPDATE --------------------
-
 update :: Model -> Msg -> Model
-update model (Insert msg) = case msg of 
-    Input input -> model { mState = parseKontakt model.mData input }
-update model (Edit msg) = case model.mState of 
-    Success anrede -> 
-        case msg of 
-             ChangeGeschlecht ges -> 
-                 model { mState = Success $ anrede { geschlecht = ges } }
-    _ -> model
+update model (Insert msg) = case msg of
+  Input input -> model { state = parseKontakt model._data input, inputRaw = input }
+  GoEdit -> model { mode = EditMode }
+
+update model (Edit msg) = case model.state of
+  Success anrede -> case msg of
+    ChangeGeschlecht ges -> model { state = Success $ anrede { geschlecht = ges } }
+    Save ->
+      model
+        { mode = InsertMode
+        , inputRaw = ""
+        , state = NothingYet
+        , _data =
+          model._data
+            { anreden = anrede : model._data.anreden }
+        }
+  _ -> model
 
 parseKontakt :: Data -> String -> Result
 parseKontakt dat = showError <<< flip runParser (pKontakt dat)
-    where showError (Left err) = Failed $ parseErrorMessage err
-          showError (Right suc) = Success suc
+  where
+  showError (Left err) = Failed $ parseErrorMessage err
+
+  showError (Right suc) = Success suc
 
 pKontakt :: Data -> Parser String Anrede
-pKontakt dat = do 
+pKontakt dat = do
   _ <- char 'a'
   b <- char 'b' <|> char 'B'
-  pure { geschlecht: Nothing 
-       , titel: []
-       , sprache: Deutsch
-       , vorname: Nothing
-       , nachname: ""
-       }
+  pure
+    { geschlecht: Nothing
+    , titel: []
+    , sprache: Deutsch
+    , vorname: Nothing
+    , nachname: ""
+    }
 
--- }}}
-
-------------------- MAIN --------------------- {{{
-
+------------------- MAIN ---------------------
 main :: Effect Unit
-main = do 
+main = do
   dataInStorage <- liftEffect $ storageGet localStorageKey
-  let stored = (eitherToMaybe <<< readJSON) =<< toMaybe dataInStorage
-      model = case stored of
-            Just stored' -> initialModel { mData = stored' }
-            Nothing -> initialModel
-      writeToStorage = liftEffect <<< storageSet localStorageKey <<< writeJSON
-      go m = do
-         msg <- view m
-         let _ = unsafePerformEffect $ logShow msg
-         let model' = update m msg 
-         writeToStorage model'.mData 
-         go model'
+  let
+    stored = (eitherToMaybe <<< readJSON) =<< toMaybe dataInStorage
+
+    model = case stored of
+      Just stored' -> initialModel { _data = stored' }
+      Nothing -> initialModel
+
+    writeToStorage = liftEffect <<< storageSet localStorageKey <<< writeJSON
+
+    go m = do
+      msg <- view m
+      let
+        _ = unsafePerformEffect $ logShow msg
+      let
+        model' = update m msg
+      writeToStorage model'._data
+      go model'
   runWidgetInDom "main" $ go model
 
--- }}}
-
-------------------- HELPER -------------------- {{{
-
+------------------- HELPER --------------------
 eitherToMaybe :: forall a b. Either a b -> Maybe b
 eitherToMaybe (Left _) = Nothing
+
 eitherToMaybe (Right r) = Just r
 
--- }}}
-
-------------------- STORAGE ------------------- {{{
-                  
+------------------- STORAGE -------------------
 localStorageKey :: String
 localStorageKey = "kontakte"
 
 instance geschlechtReadForeign :: ReadForeign Geschlecht where
-  readImpl f = readString f >>= \s -> case s of
-    "M" -> pure M 
-    "W" -> pure W
-    _ -> throwError $ singleton $ ForeignError "Geschlecht konnte nicht gelesen werden."
+  readImpl f =
+    readString f
+      >>= \s -> case s of
+          "M" -> pure M
+          "W" -> pure W
+          _ -> throwError $ singleton $ ForeignError "Geschlecht konnte nicht gelesen werden."
 
 instance spracheReadForeign :: ReadForeign Sprache where
-  readImpl f = readString f >>= \s -> case s of
-    "Deutsch" -> pure Deutsch 
-    "Englisch" -> pure Englisch
-    _ -> throwError $ singleton $ ForeignError "Sprache konnte nicht gelesen werden."
+  readImpl f =
+    readString f
+      >>= \s -> case s of
+          "Deutsch" -> pure Deutsch
+          "Englisch" -> pure Englisch
+          _ -> throwError $ singleton $ ForeignError "Sprache konnte nicht gelesen werden."
 
 instance spracheWriteForeign :: WriteForeign Sprache where
-  writeImpl Deutsch = writeImpl "Deutsch" 
-  writeImpl Englisch = writeImpl "Englisch" 
+  writeImpl Deutsch = writeImpl "Deutsch"
+  writeImpl Englisch = writeImpl "Englisch"
 
 instance geschlechtWriteForeign :: WriteForeign Geschlecht where
-  writeImpl M = writeImpl "M" 
-  writeImpl W = writeImpl "W" 
+  writeImpl M = writeImpl "M"
+  writeImpl W = writeImpl "W"
 
--- }}}
+------------------- INSTANCES ---------------------
+
+derive instance genericSprache :: Generic Sprache _
+
+instance showSprache :: Show Sprache where
+  show = genericShow
+
+derive instance genericGeschlecht :: Generic Geschlecht _
+
+derive instance eqGeschlecht :: Eq Geschlecht
+
+instance showGeschlecht :: Show Geschlecht where
+  show = genericShow
+
+derive instance genericResult :: Generic Result _
+
+instance showResult :: Show Result where
+  show = genericShow
+
+derive instance genericAppMode :: Generic AppMode _
+
+derive instance eqAppMode :: Eq AppMode
+
+instance showAppMode :: Show AppMode where
+  show = genericShow
+
+derive instance genericMsg :: Generic Msg _
+
+instance showMsg :: Show Msg where
+  show = genericShow
+
+derive instance genericIMsg :: Generic InsertMsg _
+
+instance showIMsg :: Show InsertMsg where
+  show = genericShow
+
+derive instance genericEMsg :: Generic EditMsg _
+
+instance showEMsg :: Show EditMsg where
+  show = genericShow
 
 ------------------- OLD ------------------- {{{
 {-
