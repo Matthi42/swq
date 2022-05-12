@@ -122,10 +122,10 @@ view model =
             [ MD.container [ P.className "header" ]
                 [ MD.typography [ P.unsafeMkProp "variant" "h4" ] [ D.text "Kontaktsplitter" ]
                 , MD.button
-                    [ P.href "/docs", P.unsafeMkProp "variant" "contained" ]
+                    [ P.href "/docs.html", P.unsafeMkProp "variant" "contained" ]
                     [ D.text "Dokumentation" ]
                 , MD.button
-                    [ P.href "/tests", P.unsafeMkProp "variant" "contained" ]
+                    [ P.href "/tests.html", P.unsafeMkProp "variant" "contained" ]
                     [ D.text "Testergebnisse" ]
                 ]
             ]

@@ -3,7 +3,6 @@
     make-shell.url = "github:ursi/nix-make-shell/1";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-21.11";
     purs-nix.url = "github:ursi/purs-nix";
-    # purs-nix.url = "./purs-nix";
     purs-nix.inputs.nixpkgs.follows = "nixpkgs";
     mk-node.url = "github:sephii/mk-node";
     mk-node.inputs.nixpkgs.follows = "nixpkgs";
@@ -16,12 +15,6 @@
       ({ make-shell, pkgs, purs-nix, system, ... }:
         let
           inherit (purs-nix) ps-pkgs purs;
-          # args' = {
-          #   inherit pkgs; 
-          #   utils = import "${inputs.purs-nix}/utils.nix" system;
-          # };
-          # inherit (import "${inputs.purs-nix}/build-pkgs.nix" args') build;
-          # ps-pkgs' = pkgs.lib.mapAttrs build (import ./ps-pkgs.nix ps-pkgs);
           purs' = purs {
             dependencies =
               with ps-pkgs; [
@@ -34,12 +27,7 @@
                 spec
                 quickcheck
                 spec-quickcheck
-                # react-basic
-                # react-basic-classic
-                # react-basic-mui
                 parsing
-                # spec-mocha
-                # purescript-react-mui
               ];
             srcs = [ ./src ];
           };
@@ -47,18 +35,15 @@
           nodeModules = pkgs.mkNodeModules { src = ./.; };
         in
         {
-          defaultPackage =
-            let #modules.Main.app { name = "swq"; };
-              bundle = modules.Main.bundle { };
-            in
-            pkgs.stdenv.mkDerivation {
+          defaultPackage = pkgs.stdenv.mkDerivation {
               name = "swq";
               src = ./.;
               dontBuild = true;
               buildInputs = with pkgs; [ 
                 nodePackages.parcel-bundler
-                # nodePackages.mocha
-                # nodePackages.pulp
+                pandoc
+                (command {})
+                aha
               ];
               installPhase = ''
                 # set -xe 
@@ -66,14 +51,17 @@
                 ln -s ${nodeModules}/lib/node_modules ./node_modules
                 # export PATH="${nodeModules}/bin:$PATH"
 
-                cp ${bundle} index.js
+                # cp -r $'{output}/ ./output
+                purs-nix bundle
                 # ${pkgs.closurecompiler}/bin/closure-compiler --compilation_level SIMPLE_OPTIMIZATIONS --js index.js --js_output_file index.prod.js
-
                 sed 's/script src="[a-zA-Z\.\/]*"/script src=".\/index.js"/g' ./static/index.html > index.html
                 parcel build -d $out --public-url ./ index.html # --experimental-scope-hoisting 
 
-                # rm index.html
-                # rm -rf ./node_modules
+                cp ./aufgabe/{anforderungen.md,doku.css} .
+                pandoc anforderungen.md -s --toc --metadata pagetitle="Dokumentation" -c doku.css -o $out/docs.html
+                cp doku.css $out
+
+                purs-nix test | aha -t Testergebnisse > $out/tests.html
               '';
             };
 
@@ -94,6 +82,7 @@
               # nodePackages.mocha
               nodeModules
               miniserve
+              pandoc
               # nodePackages.rimraf
             ];
 
