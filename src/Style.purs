@@ -1,14 +1,14 @@
 module Style where
 
-import Prelude (($))
-import Concur.Core (Widget)
-import Concur.React (HTML)
+-- import Prelude (($))
+-- import Concur.Core (Widget)
+-- import Concur.React (HTML)
 -- import Concur.React.DOM hiding (style)
 -- import Concur.React.Props
 
-import Concur.React.MUI.DOM as MD
-import Concur.React.DOM as D
-import Concur.React.Props as P
+-- import Concur.React.MUI.DOM as MD
+-- import Concur.React.DOM as D
+-- import Concur.React.Props as P
 
 kontaktCSS :: String
 kontaktCSS = """
@@ -24,12 +24,22 @@ kontaktCSS = """
 .content > * {
   margin-top: 2rem;
 }
-.error-msg {
-    background-color: red;
-    height: 50vh;
+.input-edit > * {
+  margin-top: 2rem;
+}
+.msg {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 1rem;
+}
+.edit-view { 
+    display: flex; 
+    justify-content: space-between 
+}
+/* .edit-view > *:not(:last-child) { margin-right: 1rem; } */
+.result-head * {
+    font-weight: bold;
 }
 """
 
@@ -42,9 +52,9 @@ kontaktCSS = """
 --                 ]
 --             ]
 
-toolbar :: forall a. Widget HTML a
-toolbar = MD.appBar []
-    [ MD.toolbar []
-      [ MD.typography [] [D.text "Kontaktsplitter"]
-      ]
-    ]
+-- toolbar :: forall a. Widget HTML a
+-- toolbar = MD.appBar []
+--     [ MD.toolbar []
+--       [ MD.typography [] [D.text "Kontaktsplitter"]
+--       ]
+--     ]
