@@ -127,6 +127,12 @@ view model =
                 , MD.button
                     [ P.href "/tests.html", P.unsafeMkProp "variant" "contained" ]
                     [ D.text "Testergebnisse" ]
+                , MD.button
+                    [ P.href "https://github.com/Matthi42/swq/blob/master/src/Main.purs", P.unsafeMkProp "variant" "contained" ]
+                    [ D.text "Sourcecode" ]
+                , MD.button
+                    [ P.href "https://github.com/Matthi42/swq/blob/master/test/Main.purs", P.unsafeMkProp "variant" "contained" ]
+                    [ D.text "Testcode" ]
                 ]
             ]
         ]
