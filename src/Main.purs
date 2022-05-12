@@ -2,7 +2,6 @@ module Main where
 
 import Prelude
 import Concur.Core (Widget)
-import Concur.Core.Props (Props(..))
 import Concur.React (HTML)
 import Concur.React.DOM as D
 import Concur.React.MUI.DOM as MD
@@ -11,12 +10,11 @@ import Concur.React.Run (runWidgetInDom)
 import Control.Alt ((<|>))
 import Control.Monad.Error.Class (throwError)
 import Control.MultiAlternative (orr)
-import Data.Array (elem, filter, intercalate, mapMaybe, (:))
+import Data.Array ((:))
 import Data.Either (Either(..))
 import Data.Generic.Rep (class Generic)
-import Data.List (find)
 import Data.List.NonEmpty (singleton)
-import Data.Maybe (Maybe(..), fromJust, fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Nullable (toMaybe)
 import Data.Show.Generic (genericShow)
 import Effect (Effect)
@@ -25,14 +23,10 @@ import Effect.Console (logShow)
 import Effect.Unsafe (unsafePerformEffect)
 import FFI (storageGet, storageSet)
 import Foreign (ForeignError(..), readString)
-import Partial.Unsafe (unsafePartial)
-import React.DOM.Props (Props, unsafeMkProps) as RP
-import React.SyntheticEvent (SyntheticEvent_)
 import Simple.JSON (class ReadForeign, class WriteForeign, readJSON, writeImpl, writeJSON)
 import Style as Style
 import Text.Parsing.Parser (Parser, runParser, parseErrorMessage)
 import Text.Parsing.Parser.String (char)
-import Unsafe.Coerce (unsafeCoerce)
 
 -- import Data.Array (many)
 ------------------- MODEL ----------------
@@ -200,8 +194,8 @@ editView model = case model.state of
               ]
               []
       , ChangeTitel
-          <$> formControl "titel" "Titel"
-              ( multiSelect
+          <$> Style.formControl "titel" "Titel"
+              ( Style.multiSelect
                   [ P.label "titel"
                   , P.disabled $ model.mode == InsertMode
                   , P.style { width: "250px" }
@@ -210,8 +204,8 @@ editView model = case model.state of
                   (map (\titel -> { t: titel, l: titel }) model._data.titel)
               )
       , ChangeGeschlecht
-          <$> formControl "geschlecht" "Geschlecht"
-              ( select
+          <$> Style.formControl "geschlecht" "Geschlecht"
+              ( Style.select
                   [ P.label "Geschlecht"
                   , P.disabled $ model.mode == InsertMode
                   , P.style { width: "150px" }
@@ -223,8 +217,8 @@ editView model = case model.state of
                   ]
               )
       , ChangeSprache
-          <$> formControl "sprache" "Sprache"
-              ( select
+          <$> Style.formControl "sprache" "Sprache"
+              ( Style.select
                   [ P.label "sprache"
                   , P.disabled $ model.mode == InsertMode
                   ]
@@ -255,62 +249,7 @@ editView model = case model.state of
       ]
       $ case model.state of
           Failed error -> [ MD.typography [ P.unsafeMkProp "variant" "h6" ] [ D.text error ] ]
-          _ -> [ MD.typography [ P.unsafeMkProp "variant" "h6" ] [ D.text "Bitte Kontakt eingeben!"]  ]
-
-formControl :: forall a. String -> String -> Widget HTML a -> Widget HTML a
-formControl id label ctrl =
-  MD.formControl [ P.unsafeMkProp "variant" "outlined" ]
-    [ MD.inputLabel [ P.htmlFor id ] [ D.text label ]
-    , ctrl
-    ]
-
--- https://github.com/labordynamicsinstitute/metajelo-ui/blob/master/src/Metajelo/FormUtil.purs
-select :: forall a. Eq a => Array (Props RP.Props a) -> a -> Array { l :: String, t :: a } -> Widget HTML a
-select props selected opts =
-  MD.select
-    ([ (unsafeFind <<< P.unsafeTargetValue) <$> P.onChange, P.value findSelected ] <> props)
-    $ map (\{ l } -> MD.menuItem [ P.value l ] [ D.text l ]) opts
-  where
-  unsafeFind a = (unsafePartial $ fromJust $ find (((==) a) <<< _.l) opts).t
-
-  findSelected = (unsafePartial $ fromJust $ find (((==) selected) <<< _.t) opts).l
-
--- | A multi select widget
--- | props: Zusätzliche Props für das Dropdown 
--- | selected: Ausgewählte Einträge 
--- | opts: Verfügbare Optionen 
-multiSelect ::
-  forall a.
-  Eq a =>
-  Show a =>
-  ReadForeign a =>
-  Array (Props RP.Props (Array a)) ->
-  Array a ->
-  Array { l :: String, t :: a } ->
-  Widget HTML (Array a)
-multiSelect props selected opts =
-  MD.select
-    ( [ P.multiple true
-      , P.valueArray selectedLabels
-      , renderValue $ intercalate " " selectedLabels
-      , (mapMaybe unsafeFind <<< unsafeTargetArray) <$> P.onChange
-      ]
-        <> props
-    )
-    $ map
-        ( \{ t, l } ->
-            MD.menuItem [ P.key $ show t, P.value l ]
-              [ MD.checkbox [ P.checked (isSelected t) ] []
-              , MD.listItemText [ P.unsafeMkProp "primary" l ] []
-              ]
-        )
-        opts
-  where
-  selectedLabels = map _.l $ filter (isSelected <<< _.t) opts
-
-  isSelected a = elem a selected
-
-  unsafeFind a = _.t <$> find (((==) a) <<< _.l) opts
+          _ -> [ MD.typography [ P.unsafeMkProp "variant" "h6" ] [ D.text "Bitte Kontakt eingeben!" ] ]
 
 anredenView :: forall a. Array Anrede -> Widget HTML a
 anredenView anreden =
@@ -436,15 +375,6 @@ nothingIfEmpty :: String -> Maybe String
 nothingIfEmpty "" = Nothing
 
 nothingIfEmpty s = Just s
-
-unsafeTargetArray ::
-  forall r.
-  SyntheticEvent_ r ->
-  Array String
-unsafeTargetArray e = (unsafeCoerce e).target.value
-
-renderValue :: forall a. String -> Props RP.Props a
-renderValue val = PrimProp (RP.unsafeMkProps "renderValue" $ \_ -> val)
 
 --------------------------------------------------------------------------------
 ---------------------------------- INSTANCES -----------------------------------
