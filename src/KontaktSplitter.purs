@@ -1,8 +1,9 @@
 module Kontaktsplitter where
 
-import Prelude (bind, flip, pure, show, ($), (<<<))
-import Types (Anrede, Data, Result(..), Sprache(..))
+import Prelude (bind, flip, pure, show, ($), (<<<), (<>))
+import Types --(Anrede, Data, Result(..), Sprache(..), Geschlecht)
 import Control.Alt ((<|>))
+import Data.Array (foldl)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Text.Parsing.Parser (Parser, runParser, parseErrorMessage)
@@ -29,4 +30,15 @@ pKontakt dat = do
     }
 
 toBriefAnrede :: Anrede -> String
-toBriefAnrede = show
+toBriefAnrede a = case a.sprache of
+  Englisch -> case a.geschlecht of
+    Just M -> "Dear Mr " <> combine a
+    Just W -> "Dear Ms " <> combine a
+    Nothing -> "To whom it may concern"
+  Deutsch -> case a.geschlecht of
+    Just M -> "Sehr geehrter Herr " <> combine a
+    Just W -> "Sehr geehrte Frau " <> combine a
+    Nothing -> "Sehr geehrte Damen und Herren"
+  where
+    join a = foldl (\x y -> x <> " " <> y) "" a
+    combine a = join a.titel <> " " <> a.nachname 
