@@ -42,7 +42,7 @@ view model =
                     [ P.href "tests.html", P.unsafeMkProp "variant" "contained" ]
                     [ D.text "Testergebnisse" ]
                 , MD.button
-                    [ P.href "https://github.com/Matthi42/swq/blob/master/src/Kontaktsplitter.purs", P.unsafeMkProp "variant" "contained" ]
+                    [ P.href "https://github.com/Matthi42/swq/blob/master/src/KontaktSplitter.purs", P.unsafeMkProp "variant" "contained" ]
                     [ D.text "Sourcecode" ]
                 , MD.button
                     [ P.href "https://github.com/Matthi42/swq/blob/master/test/Main.purs", P.unsafeMkProp "variant" "contained" ]
