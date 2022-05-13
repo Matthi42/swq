@@ -27,6 +27,7 @@
                 spec
                 quickcheck
                 spec-quickcheck
+                stringutils
                 parsing
               ];
             srcs = [ ./src ];

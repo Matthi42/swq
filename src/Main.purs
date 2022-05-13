@@ -182,7 +182,9 @@ editView model = case model.state of
       , P.unsafeMkProp "variant" "outlined"
       ]
       $ case model.state of
-          Failed error -> [ MD.typography [ P.unsafeMkProp "variant" "h6" ] [ D.text error ] ]
+          Failed error -> [ MD.typography 
+                          [ P.unsafeMkProp "variant" "h6" ] $ 
+                              [ D.pre_ [] $ D.text error ] ]
           _ -> [ MD.typography [ P.unsafeMkProp "variant" "h6" ] [ D.text "Bitte Kontakt eingeben!" ] ]
 
 anredenView :: forall a. Array Anrede -> Widget HTML a
