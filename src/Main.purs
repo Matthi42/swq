@@ -2,114 +2,29 @@ module Main where
 
 import Prelude
 import Concur.Core (Widget)
+import Types
+import Kontaktsplitter (parseKontakt, toBriefAnrede)
 import Concur.React (HTML)
 import Concur.React.DOM as D
 import Concur.React.MUI.DOM as MD
 import Concur.React.Props as P
 import Concur.React.Run (runWidgetInDom)
-import Control.Alt ((<|>))
-import Control.Monad.Error.Class (throwError)
 import Control.MultiAlternative (orr)
-import Data.Array ((:))
+import Data.Array ((:), snoc, nub)
 import Data.Either (Either(..))
-import Data.Generic.Rep (class Generic)
-import Data.List.NonEmpty (singleton)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Foldable (null)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
+import Data.String.Common (null, trim) as S
 import Data.Nullable (toMaybe)
-import Data.Show.Generic (genericShow)
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console (logShow)
 import Effect.Unsafe (unsafePerformEffect)
 import FFI (storageGet, storageSet)
-import Foreign (ForeignError(..), readString)
-import Simple.JSON (class ReadForeign, class WriteForeign, readJSON, writeImpl, writeJSON)
+import Simple.JSON (readJSON, writeJSON)
 import Style as Style
-import Text.Parsing.Parser (Parser, runParser, parseErrorMessage)
-import Text.Parsing.Parser.String (char)
 
 -- import Data.Array (many)
-------------------- MODEL ----------------
---
-data Geschlecht
-  = M
-  | W
-
-data Sprache
-  = Deutsch
-  | Englisch
-
-type Titel
-  = String
-
-type Anrede
-  = { geschlecht :: Maybe Geschlecht
-    , titel :: Array Titel
-    , sprache :: Sprache
-    , vorname :: Maybe String
-    , nachname :: String
-    }
-
--- | Diese Daten werden persistiert und beschreiben die Domäne.
-type Data
-  = { anreden :: Array Anrede
-    , titel :: Array String
-    }
-
-------------------- STATE  ------------------
---
-data Result
-  = NothingYet
-  | Failed String
-  | Success Anrede
-
-data AppMode
-  = InsertMode
-  | EditMode
-
-type Model
-  = { _data :: Data
-    , state :: Result
-    , inputRaw :: String
-    , mode :: AppMode
-    }
-
-initialModel :: Model
-initialModel =
-  { _data:
-      { anreden: []
-      , titel:
-          [ "Dr. rer. nat."
-          , "Dr. h.c."
-          , "Dr.-Ing"
-          , "Dr."
-          , "Prof."
-          , "Doktor"
-          , "Professor"
-          ]
-      }
-  , state: NothingYet
-  , inputRaw: ""
-  , mode: InsertMode
-  }
-
-------------------- MESSAGES  ------------------
-data InsertMsg
-  = Input String
-  | GoEdit
-
-data EditMsg
-  = ChangeGeschlecht (Maybe Geschlecht)
-  | ChangeVorname (Maybe String)
-  | ChangeNachname String
-  | ChangeSprache Sprache
-  | ChangeTitel (Array Titel)
-  | Save
-
-data Msg
-  = Insert InsertMsg
-  | Edit EditMsg
-
 ------------------- VIEW -------------------
 -- https://v4.mui.com/components/app-bar/
 -- https://github.com/ajnsit/purescript-concur-react-mui/blob/master/examples/src/Calc.purs
@@ -138,18 +53,19 @@ view model =
             ]
         ]
     , MD.container [ P.style { marginTop: "100px" }, P.className "content" ]
-        [ D.div [ P.className "input-edit" ]
-            [ Insert <$> inputView model
-            , Edit <$> editView model
-            ]
-        , anredenView model._data.anreden
-        ]
+        $ [ D.div [ P.className "input-edit" ]
+              [ inputView model
+              , Edit <$> editView model
+              , Dialog <$> dialogView model
+              ]
+          ]
+        <> optionals (not $ null model._data.anreden) [ anredenView model._data.anreden ]
     ]
 
-inputView :: Model -> Widget HTML InsertMsg
+inputView :: Model -> Widget HTML Msg
 inputView model =
   D.div [ P.style { display: "flex" } ]
-    [ Input
+    [ Insert <<< Input
         <$> MD.textField
             [ P.label "Kontakt hier eingeben"
             , P.value model.inputRaw
@@ -160,7 +76,7 @@ inputView model =
             , P.unsafeMkProp "variant" "outlined"
             ]
             []
-    , GoEdit
+    , Insert GoEdit
         <$ MD.button
             [ P.color "primary"
             , P.unsafeMkProp "variant" "contained"
@@ -169,73 +85,91 @@ inputView model =
             , P.onClick
             ]
             [ D.text "✏ Bearbeiten" ]
+    , Dialog OpenDialog
+        <$ MD.button
+            [ P.color "secondary"
+            , P.unsafeMkProp "variant" "contained"
+            , P.style { marginLeft: "1rem" }
+            , P.onClick
+            ]
+            [ D.text "➕ Titel hinzufügen" ]
     ]
 
 editView :: Model -> Widget HTML EditMsg
 editView model = case model.state of
   Success anrede ->
-    D.div [ P.className "edit-view" ]
-      [ ChangeNachname
-          <$> MD.textField
-              [ P.label "Nachname"
-              , P.disabled $ model.mode == InsertMode
-              , P.value anrede.nachname
-              , P.unsafeMkProp "variant" "outlined"
-              , P.unsafeTargetValue <$> P.onChange
-              ]
-              []
-      , ChangeVorname <<< nothingIfEmpty
-          <$> MD.textField
-              [ P.label "Vorname"
-              , P.disabled $ model.mode == InsertMode
-              , P.value $ fromMaybe "" anrede.vorname
-              , P.unsafeMkProp "variant" "outlined"
-              , P.unsafeTargetValue <$> P.onChange
-              ]
-              []
-      , ChangeTitel
-          <$> Style.formControl "titel" "Titel"
-              ( Style.multiSelect
-                  [ P.label "titel"
-                  , P.disabled $ model.mode == InsertMode
-                  , P.style { width: "250px" }
+    let
+      formValid = not $ S.null anrede.nachname
+
+      disabled = model.mode == InsertMode
+    in
+      D.div [ P.className "edit-view" ]
+        [ ChangeNachname
+            <$> MD.textField
+                ( [ P.label "Nachname"
+                  , P.disabled disabled
+                  , P.value anrede.nachname
+                  , P.unsafeMkProp "variant" "outlined"
+                  , P.unsafeTargetValue <$> P.onChange
                   ]
-                  anrede.titel
-                  (map (\titel -> { t: titel, l: titel }) model._data.titel)
-              )
-      , ChangeGeschlecht
-          <$> Style.formControl "geschlecht" "Geschlecht"
-              ( Style.select
-                  [ P.label "Geschlecht"
-                  , P.disabled $ model.mode == InsertMode
-                  , P.style { width: "150px" }
-                  ]
-                  anrede.geschlecht
-                  [ { l: "Keine Angabe", t: Nothing }
-                  , { l: "M", t: Just M }
-                  , { l: "W", t: Just W }
-                  ]
-              )
-      , ChangeSprache
-          <$> Style.formControl "sprache" "Sprache"
-              ( Style.select
-                  [ P.label "sprache"
-                  , P.disabled $ model.mode == InsertMode
-                  ]
-                  anrede.sprache
-                  [ { l: "Deutsch", t: Deutsch }
-                  , { l: "Englisch", t: Englisch }
-                  ]
-              )
-      , Save
-          <$ MD.button
-              [ P.color "primary"
-              , P.unsafeMkProp "variant" "contained"
-              , P.disabled $ model.mode == InsertMode
-              , P.onClick
-              ]
-              [ D.text "✔ Speichern" ]
-      ]
+                    <> optionals (not $ formValid || disabled)
+                        [ P.unsafeMkProp "error" "true"
+                        , P.unsafeMkProp "helperText" "Nachname muss ausgefüllt werden!"
+                        ]
+                )
+                []
+        , ChangeVorname <<< nothingIfEmpty
+            <$> MD.textField
+                [ P.label "Vorname"
+                , P.disabled disabled
+                , P.value $ fromMaybe "" anrede.vorname
+                , P.unsafeMkProp "variant" "outlined"
+                , P.unsafeTargetValue <$> P.onChange
+                ]
+                []
+        , ChangeTitel
+            <$> Style.formControl "titel" "Titel"
+                ( Style.multiSelect
+                    [ P.label "titel"
+                    , P.disabled disabled
+                    , P.style { width: "250px" }
+                    ]
+                    anrede.titel
+                    (map (\titel -> { t: titel, l: titel }) model._data.titel)
+                )
+        , ChangeGeschlecht
+            <$> Style.formControl "geschlecht" "Geschlecht"
+                ( Style.select
+                    [ P.label "Geschlecht"
+                    , P.disabled disabled
+                    , P.style { width: "150px" }
+                    ]
+                    anrede.geschlecht
+                    [ { l: "Keine Angabe", t: Nothing }
+                    , { l: "M", t: Just M }
+                    , { l: "W", t: Just W }
+                    ]
+                )
+        , ChangeSprache
+            <$> Style.formControl "sprache" "Sprache"
+                ( Style.select
+                    [ P.label "sprache"
+                    , P.disabled disabled
+                    ]
+                    anrede.sprache
+                    [ { l: "Deutsch", t: Deutsch }
+                    , { l: "Englisch", t: Englisch }
+                    ]
+                )
+        , Save
+            <$ MD.button
+                [ P.color "primary"
+                , P.unsafeMkProp "variant" "contained"
+                , P.disabled $ disabled || not formValid
+                , P.onClick
+                ]
+                [ D.text "✔ Speichern" ]
+        ]
   _ ->
     MD.paper
       [ P.className "msg"
@@ -269,7 +203,7 @@ anredenView anreden =
                 MD.tableRow []
                   [ mkCell anr.nachname
                   , mkCell $ mayShow anr.vorname
-                  , mkCellRAlign $ mayShow anr.geschlecht
+                  , mkCellRAlign $ mayShow $ show <$> anr.geschlecht
                   , mkCellRAlign $ show anr.sprache
                   , mkCell $ toBriefAnrede anr
                   ]
@@ -280,6 +214,47 @@ anredenView anreden =
   mkCell cnt = MD.tableCell [] [ D.text cnt ]
 
   mkCellRAlign cnt = MD.tableCell [ P.unsafeMkProp "align" "right" ] [ D.text cnt ]
+
+dialogView :: Model -> Widget HTML DialogMsg
+dialogView model =
+  let
+    formValid = not $ S.null model.titelInputRaw
+  in
+    MD.dialog
+      [ P.open $ model.mode == DialogMode
+      , CloseDialog <$ P.unsafeMkPropHandler "onClose"
+      ]
+      [ MD.dialogTitle [] [ D.text "Titel hinzufügen" ]
+      , MD.dialogContent []
+          [ MD.dialogContentText [] [ D.text "Hier können Titel wie \"Dr. med.\" hinzugefügt werden. " ]
+          , maybe AddTitel InputTitel
+              <$> Style.textFieldWithSubmit model.titelInputRaw "✔ Hinzufügen"
+                  ( [ P.label "Titel"
+                    , P.placeholder "Dr. med."
+                    ]
+                      <> optionals (not formValid)
+                          [ P.unsafeMkProp "error" "true"
+                          , P.unsafeMkProp "helperText" "Titel darf nicht leer sein!"
+                          ]
+                  )
+                  [ P.disabled $ not formValid ]
+          , MD.divider [ P.style { margin: "1rem 0" } ] []
+          , MD.typography
+              [ P.unsafeMkProp "variant" "subtitle2", P.style { marginTop: ".5rem" } ]
+              [ D.text "Vorhandene Titel" ]
+          , MD.list [ P.unsafeMkProp "dense" "true", P.style { maxHeight: "250px" } ]
+              $ map
+                  ( \titel ->
+                      MD.listItem []
+                        [ MD.listItemText [ P.unsafeMkProp "primary" titel ] [] ]
+                  )
+                  model._data.titel
+          ]
+      , CloseDialog
+          <$ MD.dialogActions []
+              [ MD.button [ P.onClick, P.color "primary" ] [ D.text "OK" ]
+              ]
+      ]
 
 ------------------- UPDATE --------------------
 --
@@ -306,27 +281,26 @@ update model (Edit msg) = case model.state of
         }
   _ -> model
 
-parseKontakt :: Data -> String -> Result
-parseKontakt dat = showError <<< flip runParser (pKontakt dat)
-  where
-  showError (Left err) = Failed $ parseErrorMessage err
-
-  showError (Right suc) = Success suc
-
-pKontakt :: Data -> Parser String Anrede
-pKontakt dat = do
-  _ <- char 'a'
-  b <- char 'b' <|> char 'B'
-  pure
-    { geschlecht: Nothing
-    , titel: [ "Dr.", "Prof." ]
-    , sprache: Deutsch
-    , vorname: Nothing
-    , nachname: ""
-    }
-
-toBriefAnrede :: Anrede -> String
-toBriefAnrede = show
+update model (Dialog msg) = case msg of
+  OpenDialog ->
+    model
+      { mode = DialogMode
+      , prevMode = Just model.mode
+      }
+  CloseDialog ->
+    model
+      { mode = fromMaybe InsertMode model.prevMode
+      , prevMode = Nothing
+      }
+  InputTitel newTitel -> model { titelInputRaw = newTitel }
+  AddTitel ->
+    model
+      { _data =
+        model._data
+          { titel = nub $ snoc model._data.titel $ S.trim model.titelInputRaw
+          }
+      , titelInputRaw = ""
+      }
 
 ------------------- MAIN ---------------------
 localStorageKey :: String
@@ -361,10 +335,8 @@ eitherToMaybe (Left _) = Nothing
 
 eitherToMaybe (Right r) = Just r
 
-mayShow :: forall s. Show s => Maybe s -> String
-mayShow (Just s) = show s
-
-mayShow Nothing = "-"
+mayShow :: Maybe String -> String
+mayShow = fromMaybe "-"
 
 isSuccess :: Result -> Boolean
 isSuccess (Success _) = true
@@ -376,73 +348,7 @@ nothingIfEmpty "" = Nothing
 
 nothingIfEmpty s = Just s
 
---------------------------------------------------------------------------------
----------------------------------- INSTANCES -----------------------------------
---------------------------------------------------------------------------------
--- Das sind vom Typsystem generierte Funktionen zum (De-)Serialisieren,
--- Vergleichen und Anzeigen von Datentypen
---
-derive instance genericSprache :: Generic Sprache _
+optionals :: forall m. Monoid m => Boolean -> m -> m
+optionals true = identity
 
-derive instance eqSprache :: Eq Sprache
-
-instance showSprache :: Show Sprache where
-  show = genericShow
-
-derive instance genericGeschlecht :: Generic Geschlecht _
-
-derive instance eqGeschlecht :: Eq Geschlecht
-
-instance showGeschlecht :: Show Geschlecht where
-  show = genericShow
-
-derive instance genericResult :: Generic Result _
-
-instance showResult :: Show Result where
-  show = genericShow
-
-derive instance genericAppMode :: Generic AppMode _
-
-derive instance eqAppMode :: Eq AppMode
-
-instance showAppMode :: Show AppMode where
-  show = genericShow
-
-derive instance genericMsg :: Generic Msg _
-
-instance showMsg :: Show Msg where
-  show = genericShow
-
-derive instance genericIMsg :: Generic InsertMsg _
-
-instance showIMsg :: Show InsertMsg where
-  show = genericShow
-
-derive instance genericEMsg :: Generic EditMsg _
-
-instance showEMsg :: Show EditMsg where
-  show = genericShow
-
-instance geschlechtReadForeign :: ReadForeign Geschlecht where
-  readImpl f =
-    readString f
-      >>= \s -> case s of
-          "M" -> pure M
-          "W" -> pure W
-          _ -> throwError $ singleton $ ForeignError "Geschlecht konnte nicht gelesen werden."
-
-instance spracheReadForeign :: ReadForeign Sprache where
-  readImpl f =
-    readString f
-      >>= \s -> case s of
-          "Deutsch" -> pure Deutsch
-          "Englisch" -> pure Englisch
-          _ -> throwError $ singleton $ ForeignError "Sprache konnte nicht gelesen werden."
-
-instance spracheWriteForeign :: WriteForeign Sprache where
-  writeImpl Deutsch = writeImpl "Deutsch"
-  writeImpl Englisch = writeImpl "Englisch"
-
-instance geschlechtWriteForeign :: WriteForeign Geschlecht where
-  writeImpl M = writeImpl "M"
-  writeImpl W = writeImpl "W"
+optionals false = const mempty

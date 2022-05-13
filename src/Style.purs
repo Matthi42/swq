@@ -1,24 +1,23 @@
 module Style where
 
 import Prelude
--- import Concur.Core (Widget)
--- import Concur.React (HTML)
--- import Concur.React.DOM hiding (style)
--- import Concur.React.Props
 import Concur.Core (Widget)
-import Data.Maybe (fromJust)
-import Data.List (find)
 import Concur.Core.Props (Props(..))
 import Concur.React (HTML)
-import Data.Array (elem, filter, intercalate, mapMaybe)
-import Simple.JSON (class ReadForeign)
-import Concur.React.MUI.DOM as MD
-import Unsafe.Coerce (unsafeCoerce)
-import React.DOM.Props (Props, unsafeMkProps) as RP
-import Partial.Unsafe (unsafePartial)
 import Concur.React.DOM as D
-import React.SyntheticEvent (SyntheticEvent_)
+import Concur.React.MUI.DOM as MD
 import Concur.React.Props as P
+import Data.Array (elem, filter, intercalate, mapMaybe)
+import Data.List (find)
+import Data.Maybe (Maybe(..), fromJust)
+-- import Data.Either (Either(..))
+-- import Effect.Class (liftEffect)
+import Partial.Unsafe (unsafePartial)
+import React.DOM.Props (Props, unsafeMkProps) as RP
+-- import React.Ref as Ref
+import React.SyntheticEvent (SyntheticEvent_)
+import Simple.JSON (class ReadForeign)
+import Unsafe.Coerce (unsafeCoerce)
 
 kontaktCSS :: String
 kontaktCSS =
@@ -69,6 +68,7 @@ select props selected opts =
     $ map (\{ l } -> MD.menuItem [ P.value l ] [ D.text l ]) opts
   where
   unsafeFind a = (unsafePartial $ fromJust $ find (((==) a) <<< _.l) opts).t
+
   findSelected = (unsafePartial $ fromJust $ find (((==) selected) <<< _.t) opts).l
 
 -- | A multi select widget
@@ -103,7 +103,9 @@ multiSelect props selected opts =
         opts
   where
   selectedLabels = map _.l $ filter (isSelected <<< _.t) opts
+
   isSelected a = elem a selected
+
   unsafeFind a = _.t <$> find (((==) a) <<< _.l) opts
 
 unsafeTargetArray ::
@@ -114,3 +116,36 @@ unsafeTargetArray e = (unsafeCoerce e).target.value
 
 renderValue :: forall a. String -> Props RP.Props a
 renderValue val = PrimProp (RP.unsafeMkProps "renderValue" $ \_ -> val)
+
+-- | A Text input that has a button attached
+-- | Returns its contents on the user pressing enter, or clicking the button
+-- | Inspired by <https://github.com/purescript-concur/purescript-concur-react/blob/v0.4.2/src/Concur/React/Widgets.purs#L30-L35>
+textFieldWithSubmit ::
+  String ->
+  String ->
+  -- String -> 
+  (forall a. Array (Props RP.Props a)) ->
+  (forall a. Array (Props RP.Props a)) ->
+  Widget HTML (Maybe String)
+textFieldWithSubmit val butLabel inpProps butProps =
+  D.div [ P.style { display: "flex" } ]
+    [ MD.textField
+        ( inpProps
+            <> [ Nothing <$ P.onKeyEnter
+              , Just <<< P.unsafeTargetValue <$> P.onChange
+              , P.value val
+              , P.style { flexGrow: "1" }
+              , P.unsafeMkProp "variant" "outlined"
+              ]
+        )
+        []
+    , MD.button
+        ( butProps
+            <> [ Nothing <$ P.onClick
+              , P.color "primary"
+              , P.unsafeMkProp "variant" "contained"
+              , P.style { marginLeft: "1rem", height: "56px" }
+              ]
+        )
+        [ D.text butLabel ]
+    ]
