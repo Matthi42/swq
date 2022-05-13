@@ -61,6 +61,7 @@
                 cp ./aufgabe/{anforderungen.md,doku.css} .
                 pandoc anforderungen.md -s --toc --metadata pagetitle="Dokumentation" -c doku.css -o $out/docs.html
                 cp doku.css $out
+                cp ./aufgabe/architecture-overview-diagram.svg $out
 
                 purs-nix test | aha -t Testergebnisse > $out/tests.html
               '';

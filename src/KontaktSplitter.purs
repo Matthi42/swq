@@ -110,4 +110,13 @@ sc1 :: Parser String Unit
 sc1 = void $ space <* skipSpaces
 
 toBriefAnrede :: Anrede -> String
-toBriefAnrede = show
+toBriefAnrede a = case a.sprache of
+  Englisch -> case a.geschlecht of
+    Just M -> "Dear Mr " <> combine
+    Just W -> "Dear Ms " <> combine
+    Nothing -> "Dear Sir or Madam " <> a.nachname
+  Deutsch -> case a.geschlecht of
+    Just M -> "Sehr geehrter Herr " <> combine
+    Just W -> "Sehr geehrte Frau " <> combine
+    Nothing -> "Sehr geehrte Damen und Herren " <> a.nachname
+  where combine = intercalate " " a.titel <> " " <> a.nachname 
