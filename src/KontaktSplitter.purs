@@ -15,7 +15,28 @@ import Text.Parsing.Parser.String (char, eof, match, string)
 import Text.Parsing.Parser.Combinators (choice, lookAhead, manyTill, skipMany, try, (<|>))
 import Text.Parsing.Parser.String.Basic (letter, skipSpaces, space)
 
+------------------- BRIEFFORM  ------------------
+--
+
+-- | Berechnet die Briefanrede für den Anredentyp zurück
+toBriefAnrede :: Anrede -> String
+toBriefAnrede a = case a.sprache of
+  Englisch -> case a.geschlecht of
+    Just M -> "Dear Mr " <> combine
+    Just W -> "Dear Ms " <> combine
+    Nothing -> "Dear Sir or Madam " <> a.nachname
+  Deutsch -> case a.geschlecht of
+    Just M -> "Sehr geehrter Herr " <> combine
+    Just W -> "Sehr geehrte Frau " <> combine
+    Nothing -> "Sehr geehrte Damen und Herren " <> a.nachname
+  where
+  combine = intercalate " " a.titel <> maybe "" ((<>) " ") a.vorname <> " " <> a.nachname
+
 ------------------- KONTAKTSPLITTER  ------------------
+--
+
+-- | Nimmt die Daten der Anwendung und die Eingabe und berechnet das Ergebnis
+-- | Gibt entweder Erfolg + Anrede (Success) oder einen Error (Failed) zurück
 parseKontakt :: Data -> String -> Result
 parseKontakt dat input = showError $ runParser input (pKontakt dat <* eof)
   where
@@ -28,6 +49,7 @@ parseKontakt dat input = showError $ runParser input (pKontakt dat <* eof)
          space <> "↑\n" <>
          "Fehler: " <> errMsg <> " \n"
 
+-- | Parser combinator für eine Anrede
 pKontakt :: Data -> Parser String Anrede
 pKontakt _data = do
   skipSpaces
@@ -50,6 +72,7 @@ pKontakt _data = do
     , nachname
     }
 
+-- | Parser combinator für Herr / Frau / Mr. /...
 pAnrede :: Parser String { geschlecht :: Geschlecht, sprache :: Sprache }
 pAnrede =  (\geschlecht -> { sprache: Deutsch,  geschlecht }) <$> pDeutsch
        <|> (\geschlecht -> { sprache: Englisch, geschlecht }) <$> pEnglisch
@@ -60,11 +83,13 @@ pAnrede =  (\geschlecht -> { sprache: Deutsch,  geschlecht }) <$> pDeutsch
             <|> W <$ optAbr "Mrs"
             <|> M <$ optAbr "Mr"
 
+-- | Parser combinator für <Vornamen Nachname>
 pVornamenNachname :: Parser String (Tuple (List String) String)
 pVornamenNachname = Tuple
     <$> manyTill (pWord <* sc1) (lookAhead $ pNachname <* skipSpaces <* eof)
     <*> pNachname
 
+-- | Parser combinator für <Nachname, Vornamen>
 pNachnameKommaVorname :: Parser String (Tuple (List String) String)
 pNachnameKommaVorname = flip Tuple
     <$> pNachname <* skipSpaces
@@ -74,6 +99,7 @@ pNachnameKommaVorname = flip Tuple
                      )
         )
 
+-- | Parser combinator für Nachname + Adelsprädikat
 pNachname :: Parser String String
 pNachname = toString
          <$> optional (pAdelstitel <* sc1)
@@ -107,16 +133,3 @@ optAbr s = string s <* optional (char '.')
 -- | Parses at least one or more whitepace
 sc1 :: Parser String Unit
 sc1 = void $ space <* skipSpaces
-
-toBriefAnrede :: Anrede -> String
-toBriefAnrede a = case a.sprache of
-  Englisch -> case a.geschlecht of
-    Just M -> "Dear Mr " <> combine
-    Just W -> "Dear Ms " <> combine
-    Nothing -> "Dear Sir or Madam " <> a.nachname
-  Deutsch -> case a.geschlecht of
-    Just M -> "Sehr geehrter Herr " <> combine
-    Just W -> "Sehr geehrte Frau " <> combine
-    Nothing -> "Sehr geehrte Damen und Herren " <> a.nachname
-  where
-  combine = intercalate " " a.titel <> maybe "" ((<>) " ") a.vorname <> " " <> a.nachname

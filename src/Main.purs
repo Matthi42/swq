@@ -2,7 +2,6 @@ module Main where
 
 import Types
 import Prelude (class Monoid, Unit, bind, const, discard, identity, map, mempty, not, show, ($), (<$), (<$>), (<<<), (<>), (=<<), (==), (||))
-
 import Concur.Core (Widget)
 import Concur.React (HTML)
 import Concur.React.DOM as D
@@ -25,11 +24,9 @@ import Kontaktsplitter (parseKontakt, toBriefAnrede)
 import Simple.JSON (readJSON, writeJSON)
 import Style as Style
 
--- import Data.Array (many)
 ------------------- VIEW -------------------
--- https://v4.mui.com/components/app-bar/
--- https://github.com/ajnsit/purescript-concur-react-mui/blob/master/examples/src/Calc.purs
---
+-- View-Teil der Elmarchitektur
+
 view :: Model -> Widget HTML Msg
 view model =
   orr
@@ -45,7 +42,7 @@ view model =
                     [ P.href "tests.html", P.unsafeMkProp "variant" "contained" ]
                     [ D.text "Testergebnisse" ]
                 , MD.button
-                    [ P.href "https://github.com/Matthi42/swq/blob/master/src/Main.purs", P.unsafeMkProp "variant" "contained" ]
+                    [ P.href "https://github.com/Matthi42/swq/blob/master/src/Kontaktsplitter.purs", P.unsafeMkProp "variant" "contained" ]
                     [ D.text "Sourcecode" ]
                 , MD.button
                     [ P.href "https://github.com/Matthi42/swq/blob/master/test/Main.purs", P.unsafeMkProp "variant" "contained" ]
@@ -260,7 +257,8 @@ dialogView model =
       ]
 
 ------------------- UPDATE --------------------
---
+-- Updateteil der Elmarchitektur
+
 update :: Model -> Msg -> Model
 update model (Insert msg) = case msg of
   Input input -> model { state = parseKontakt model._data input, inputRaw = input }
@@ -307,6 +305,8 @@ update model (Dialog msg) = case msg of
       }
 
 ------------------- MAIN ---------------------
+-- Einstiegspunkt der App 
+
 localStorageKey :: String
 localStorageKey = "kontakte"
 
@@ -334,9 +334,9 @@ main = do
 
 ------------------- HELPER --------------------
 --
+
 eitherToMaybe :: forall a b. Either a b -> Maybe b
 eitherToMaybe (Left _) = Nothing
-
 eitherToMaybe (Right r) = Just r
 
 mayShow :: Maybe String -> String
@@ -344,15 +344,12 @@ mayShow = fromMaybe "-"
 
 isSuccess :: Result -> Boolean
 isSuccess (Success _) = true
-
 isSuccess _ = false
 
 nothingIfEmpty :: String -> Maybe String
 nothingIfEmpty "" = Nothing
-
 nothingIfEmpty s = Just s
 
 optionals :: forall m. Monoid m => Boolean -> m -> m
 optionals true = identity
-
 optionals false = const mempty

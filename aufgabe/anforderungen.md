@@ -93,7 +93,7 @@ update :: Model -> Msg -> Model
 
 ### Überblick über Module
 
-- ["Businesslogik (src/KontaktSplitter.purs)"](https://github.com/Matthi42/swq/blob/master/src/KontaktSplitter.purs)
+- ["Businesslogik" => Parser und Briefform-Generator (src/KontaktSplitter.purs)](https://github.com/Matthi42/swq/blob/master/src/KontaktSplitter.purs)
 - [Model & Typen (src/Types.purs)](https://github.com/Matthi42/swq/blob/master/src/Types.purs)
 - [UI & Main (src/Main.purs)](https://github.com/Matthi42/swq/blob/master/src/Main.purs)
 - [UI Helper (src/Style.purs)](https://github.com/Matthi42/swq/blob/master/src/Style.purs)
