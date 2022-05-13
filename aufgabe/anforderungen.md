@@ -43,8 +43,10 @@ include-before: |
 
 ### Annahmen
 
-- Titel sind sprachen agnostisch, d.h. sie bleiben in allen Sprachen gleich 
-- Sprache wird aus der Anrede / Geschlecht erkannt und kann noch angepasst werden
+- Titel sind sprachen-agnostisch, d.h. sie bleiben in allen Sprachen gleich.
+- Sprache wird aus der Anrede / Geschlecht erkannt und kann noch angepasst werden.
+- nur hardkodierte Adelsprädikate werden erkannt.
+- Falls Nachname aus mehreren Wörtern besteht, müssen diese mit Bindestrich verbunden werden.
 
 ### Grobe Modellierung 
 Es wurde sich für die Elm Architektur entschieden. Elm ist eine funktionale Architektur um Web-Pages zu erstellen.
@@ -63,6 +65,12 @@ data InsertMsg
   = Input String
   | GoEdit
 
+data DialogMsg
+  = AddTitel
+  | InputTitel String
+  | OpenDialog
+  | CloseDialog
+
 data EditMsg
   = ChangeGeschlecht (Maybe Geschlecht)
   | ChangeVorname (Maybe String)
@@ -74,6 +82,7 @@ data EditMsg
 data Msg
   = Insert InsertMsg
   | Edit EditMsg
+  | Dialog DialogMsg
 ```
 Die Messages wurden in Änderungen und Einfügen eingeteilt.
 
@@ -81,3 +90,12 @@ Die Messages wurden in Änderungen und Einfügen eingeteilt.
 ``` haskell
 update :: Model -> Msg -> Model
 ```
+
+### Überblick über Module
+
+- ["Businesslogik (src/KontaktSplitter.purs)"](https://github.com/Matthi42/swq/blob/master/src/KontaktSplitter.purs)
+- [Model & Typen (src/Types.purs)](https://github.com/Matthi42/swq/blob/master/src/Types.purs)
+- [UI & Main (src/Main.purs)](https://github.com/Matthi42/swq/blob/master/src/Main.purs)
+- [UI Helper (src/Style.purs)](https://github.com/Matthi42/swq/blob/master/src/Style.purs)
+- [Tests (test/Main.purs)](https://github.com/Matthi42/swq/blob/master/test/Main.purs)
+
