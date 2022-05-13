@@ -1,33 +1,32 @@
 module Kontaktsplitter where
 
-import Prelude
-import Types
-import Control.Alt ((<|>))
-import Data.Array (fromFoldable, many, some, catMaybes, replicate)
+import Prelude (Unit, bind, discard, flip, map, mempty, pure, void, ($), (*>), (-), (<$), (<$>), (<*), (<*>), (<>))
+import Types (Anrede, Data, Geschlecht(..), Result(..), Sprache(..))
+import Data.Array (catMaybes, fromFoldable, many, replicate)
 import Data.List (List)
 import Data.Foldable (null, intercalate)
 import Data.String.CodeUnits (fromCharArray)
 import Data.Tuple (fst, Tuple(..))
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe, optional, maybe)
-import Text.Parsing.Parser (Parser, runParser, parseErrorMessage, fail, parseErrorPosition)
+import Text.Parsing.Parser (Parser, parseErrorMessage, parseErrorPosition, runParser)
 import Text.Parsing.Parser.Pos (Position(..))
-import Text.Parsing.Parser.String -- (char)
-import Text.Parsing.Parser.Combinators hiding (optional)
-import Text.Parsing.Parser.String.Basic -- (char)
+import Text.Parsing.Parser.String (char, eof, match, string)
+import Text.Parsing.Parser.Combinators (choice, lookAhead, manyTill, skipMany, try, (<|>))
+import Text.Parsing.Parser.String.Basic (letter, skipSpaces, space)
 
 ------------------- KONTAKTSPLITTER  ------------------
 parseKontakt :: Data -> String -> Result
 parseKontakt dat input = showError $ runParser input (pKontakt dat <* eof)
   where
   showError (Right suc) = Success suc
-  showError (Left err) = 
+  showError (Left err) =
     let errMsg = parseErrorMessage err
-        Position { column } = parseErrorPosition err 
+        Position { column } = parseErrorPosition err
         space = fromCharArray $ replicate (column - 1) ' '
      in Failed $ input <> "\n" <>
-         space <> "↑\n" <> 
-         "Fehler: " <> errMsg <> " \n" 
+         space <> "↑\n" <>
+         "Fehler: " <> errMsg <> " \n"
 
 pKontakt :: Data -> Parser String Anrede
 pKontakt _data = do
@@ -44,43 +43,43 @@ pKontakt _data = do
     { geschlecht
     , sprache
     , titel
-    , vorname: 
-        if null vornamen 
-            then Nothing 
-            else Just $ intercalate " " vornamen 
+    , vorname:
+        if null vornamen
+            then Nothing
+            else Just $ intercalate " " vornamen
     , nachname
     }
 
 pAnrede :: Parser String { geschlecht :: Geschlecht, sprache :: Sprache }
-pAnrede =  (\geschlecht -> { sprache: Deutsch,  geschlecht }) <$> pDeutsch 
+pAnrede =  (\geschlecht -> { sprache: Deutsch,  geschlecht }) <$> pDeutsch
        <|> (\geschlecht -> { sprache: Englisch, geschlecht }) <$> pEnglisch
-    where 
-    pDeutsch = M <$ string "Herr" 
+    where
+    pDeutsch = M <$ string "Herr"
             <|> W <$ string "Frau"
     pEnglisch = W <$ optAbr "Ms"
             <|> W <$ optAbr "Mrs"
-            <|> M <$ optAbr "Mr" 
+            <|> M <$ optAbr "Mr"
 
 pVornamenNachname :: Parser String (Tuple (List String) String)
-pVornamenNachname = Tuple 
+pVornamenNachname = Tuple
     <$> manyTill (pWord <* sc1) (lookAhead $ pNachname <* skipSpaces <* eof)
     <*> pNachname
 
 pNachnameKommaVorname :: Parser String (Tuple (List String) String)
-pNachnameKommaVorname = flip Tuple 
+pNachnameKommaVorname = flip Tuple
     <$> pNachname <* skipSpaces
-    <*> (fromMaybe mempty <$> 
-            optional ( char ',' 
+    <*> (fromMaybe mempty <$>
+            optional ( char ','
                      *> manyTill (sc1 *> pWord) (lookAhead $ skipSpaces <* eof)
                      )
         )
 
 pNachname :: Parser String String
-pNachname = toString 
+pNachname = toString
          <$> optional (pAdelstitel <* sc1)
          <*> takeWhile1 (letter <|> char '-')
     where toString ad nachname = intercalate " " $ catMaybes [ ad, Just nachname ]
-          pAdelstitel = choice $ map string 
+          pAdelstitel = choice $ map string
             [ "Freiherr von"
             , "Freiherr vom"
             , "von und zum"
@@ -91,19 +90,19 @@ pNachname = toString
             , "vom"
             , "of"
             , "de"
-            , "van" 
+            , "van"
             ]
 
-pWord :: Parser String String 
+pWord :: Parser String String
 pWord = takeWhile1 letter
 
-takeWhile1 :: forall a. Parser String a -> Parser String String 
+takeWhile1 :: forall a. Parser String a -> Parser String String
 takeWhile1 p = fst <$> match (skipMany p)
 
 -- | Optionally abbreviated string parser
 -- | Parses "Mr" as well as "Mr."
 optAbr :: String -> Parser String String
-optAbr s = string s <* optional (char '.') 
+optAbr s = string s <* optional (char '.')
 
 -- | Parses at least one or more whitepace
 sc1 :: Parser String Unit
@@ -119,4 +118,5 @@ toBriefAnrede a = case a.sprache of
     Just M -> "Sehr geehrter Herr " <> combine
     Just W -> "Sehr geehrte Frau " <> combine
     Nothing -> "Sehr geehrte Damen und Herren " <> a.nachname
-  where combine = intercalate " " a.titel <> " " <> a.nachname 
+  where
+  combine = intercalate " " a.titel <> maybe "" ((<>) " ") a.vorname <> " " <> a.nachname

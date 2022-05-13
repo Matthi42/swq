@@ -10,11 +10,8 @@ import Concur.React.Props as P
 import Data.Array (elem, filter, intercalate, mapMaybe)
 import Data.List (find)
 import Data.Maybe (Maybe(..), fromJust)
--- import Data.Either (Either(..))
--- import Effect.Class (liftEffect)
 import Partial.Unsafe (unsafePartial)
 import React.DOM.Props (Props, unsafeMkProps) as RP
--- import React.Ref as Ref
 import React.SyntheticEvent (SyntheticEvent_)
 import Simple.JSON (class ReadForeign)
 import Unsafe.Coerce (unsafeCoerce)
@@ -22,9 +19,9 @@ import Unsafe.Coerce (unsafeCoerce)
 kontaktCSS :: String
 kontaktCSS =
   """
-.header { 
+.header {
   display: flex
-} 
+}
 .header h4 {
   margin-right: auto;
   flex-grow: 1;
@@ -43,9 +40,9 @@ kontaktCSS =
     justify-content: center;
     padding: 1rem;
 }
-.edit-view { 
-    display: flex; 
-    justify-content: space-between 
+.edit-view {
+    display: flex;
+    justify-content: space-between
 }
 /* .edit-view > *:not(:last-child) { margin-right: 1rem; } */
 .result-head * {
@@ -72,9 +69,9 @@ select props selected opts =
   findSelected = (unsafePartial $ fromJust $ find (((==) selected) <<< _.t) opts).l
 
 -- | A multi select widget
--- | props: Zusätzliche Props für das Dropdown 
--- | selected: Ausgewählte Einträge 
--- | opts: Verfügbare Optionen 
+-- | props: Zusätzliche Props für das Dropdown
+-- | selected: Ausgewählte Einträge
+-- | opts: Verfügbare Optionen
 multiSelect ::
   forall a.
   Eq a =>
@@ -123,7 +120,7 @@ renderValue val = PrimProp (RP.unsafeMkProps "renderValue" $ \_ -> val)
 textFieldWithSubmit ::
   String ->
   String ->
-  -- String -> 
+  -- String ->
   (forall a. Array (Props RP.Props a)) ->
   (forall a. Array (Props RP.Props a)) ->
   Widget HTML (Maybe String)

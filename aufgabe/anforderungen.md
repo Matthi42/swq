@@ -21,14 +21,14 @@ include-before: |
 
 ## Bewertung der Storys
 
-| User Story | Storypoint | Akzeptanzkriterien |
-|------------|------------|--------------------|
-| 1          | 5          | Beim Absenden der Eingabe (vergleiche Testdaten) soll diese in ihre Bestandteile zerlegt werden und gespeichert werden. | 
-| 2          | 2          | Es sollen sowohl "Anrede Vorname Nachname" und "Anrede Nachname, Vorname" erkannt werden. |
-| 3 | 1 | Nach dem Absenden sollen die Bestandteile in korrekter Form für Briefe angezeigt werden. |
-| 4 | 1 | Ausgeschriebene und abgekürzte Titel sollen gleich behandelt werden. |
-| 5 | 2 | Wenn das Geschlecht nicht erkannt werden kann, soll es manuell angegeben werden können. |
-| 6 | 3 | Neue Anreden sollen mit Geschlecht und Briefform verknüpft werden können. Danach soll die neue Anrede auch in der normalen Eingabe genutzt werden können. |
+| User Story | Storypoint | Akzeptanzkriterien                                                                                                           |
+|------------|------------|------------------------------------------------------------------------------------------------------------------------------|
+| 1          | 5          | Beim Absenden der Eingabe (vergleiche Testdaten) soll diese in ihre Bestandteile zerlegt werden und gespeichert werden.      |
+| 2          | 2          | Es sollen sowohl "Anrede Vorname Nachname" und "Anrede Nachname, Vorname" erkannt werden.                                    |
+| 3          | 1          | Nach dem Absenden sollen die Bestandteile in korrekter Form für Briefe angezeigt werden.                                     |
+| 4          | 1          | Ausgeschriebene und abgekürzte Titel sollen möglich sein.                                                                    |
+| 5          | 2          | Wenn das Geschlecht nicht erkannt werden kann, soll es manuell angegeben werden können.                                      |
+| 6          | 3          | Neue Titel sollen hinzugefügt werden können. Danach soll die neue Anrede auch in der normalen Eingabe genutzt werden können. |
 
 ## Definiton of Done
 

@@ -1,26 +1,27 @@
 module Main where
 
-import Prelude
-import Concur.Core (Widget)
 import Types
-import Kontaktsplitter (parseKontakt, toBriefAnrede)
+import Prelude (class Monoid, Unit, bind, const, discard, identity, map, mempty, not, show, ($), (<$), (<$>), (<<<), (<>), (=<<), (==), (||))
+
+import Concur.Core (Widget)
 import Concur.React (HTML)
 import Concur.React.DOM as D
 import Concur.React.MUI.DOM as MD
 import Concur.React.Props as P
 import Concur.React.Run (runWidgetInDom)
 import Control.MultiAlternative (orr)
-import Data.Array ((:), snoc, nub)
+import Data.Array ((:), cons, nub)
 import Data.Either (Either(..))
 import Data.Foldable (null)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.String.Common (null, trim) as S
 import Data.Nullable (toMaybe)
+import Data.String.Common (null, trim) as S
 import Effect (Effect)
 import Effect.Class (liftEffect)
 import Effect.Console (logShow)
 import Effect.Unsafe (unsafePerformEffect)
 import FFI (storageGet, storageSet)
+import Kontaktsplitter (parseKontakt, toBriefAnrede)
 import Simple.JSON (readJSON, writeJSON)
 import Style as Style
 
@@ -182,8 +183,8 @@ editView model = case model.state of
       , P.unsafeMkProp "variant" "outlined"
       ]
       $ case model.state of
-          Failed error -> [ MD.typography 
-                          [ P.unsafeMkProp "variant" "h6" ] $ 
+          Failed error -> [ MD.typography
+                          [ P.unsafeMkProp "variant" "h6" ] $
                               [ D.pre_ [] $ D.text error ] ]
           _ -> [ MD.typography [ P.unsafeMkProp "variant" "h6" ] [ D.text "Bitte Kontakt eingeben!" ] ]
 
@@ -293,13 +294,14 @@ update model (Dialog msg) = case msg of
     model
       { mode = fromMaybe InsertMode model.prevMode
       , prevMode = Nothing
+      , inputRaw = ""
       }
   InputTitel newTitel -> model { titelInputRaw = newTitel }
   AddTitel ->
     model
       { _data =
         model._data
-          { titel = nub $ snoc model._data.titel $ S.trim model.titelInputRaw
+          { titel = nub $ cons (S.trim model.titelInputRaw) model._data.titel  
           }
       , titelInputRaw = ""
       }
