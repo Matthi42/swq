@@ -37,7 +37,7 @@ include-before: |
 - Unit-Test Abdeckung der Business-Logic 75%
 - Keine Kompilierfehler
 - Dokumentation erstellt
-- alle erstellte Tests werden bestanden 
+- Alle erstellten Tests werden bestanden 
 
 ## Design 
 
