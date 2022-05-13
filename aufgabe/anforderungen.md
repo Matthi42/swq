@@ -24,19 +24,60 @@ include-before: |
 | User Story | Storypoint | Akzeptanzkriterien |
 |------------|------------|--------------------|
 | 1          | 5          | Beim Absenden der Eingabe (vergleiche Testdaten) soll diese in ihre Bestandteile zerlegt werden und gespeichert werden. | 
-| 2 | 2 | Es sollen sowohl "Anrede Vorname Nachname" und "Anrede Nachname, Vorname" erkannt werden. |
+| 2          | 2          | Es sollen sowohl "Anrede Vorname Nachname" und "Anrede Nachname, Vorname" erkannt werden. |
 | 3 | 1 | Nach dem Absenden sollen die Bestandteile in korrekter Form für Briefe angezeigt werden. |
 | 4 | 1 | Ausgeschriebene und abgekürzte Titel sollen gleich behandelt werden. |
 | 5 | 2 | Wenn das Geschlecht nicht erkannt werden kann, soll es manuell angegeben werden können. |
 | 6 | 3 | Neue Anreden sollen mit Geschlecht und Briefform verknüpft werden können. Danach soll die neue Anrede auch in der normalen Eingabe genutzt werden können. |
 
+## Definiton of Done
+
+- Die Akzeptanzkriterien der User Storys sind erfüllt.
+- Alle Abhängigkeiten sind kontrolliert.
+- Unit-Test Abdeckung der Business-Logic 75%
+- Keine Kompilierfehler
+- Dokumentation erstellt
+- Alle erstellten Tests werden bestanden 
+
 ## Design 
- Was genau soll gemacht werden??????????????????????????
 
 ### Annahmen
 
-- Titel sind sprachenagnostisch, d.h. sie bleiben in allen Sprachen gleich 
+- Titel sind sprachen agnostisch, d.h. sie bleiben in allen Sprachen gleich 
 - Sprache wird aus der Anrede / Geschlecht erkannt und kann noch angepasst werden
 
 ### Grobe Modellierung 
+Es wurde sich für die Elm Architektur entschieden. Elm ist eine funktionale Architektur um Web-Pages zu erstellen.
+Dabei wird der "Zustand" der App im Model gespeichert.
+Die Darstellung wird mit einer Funktion erzielt, die das Model nimmt und eine HTML-Seite erstellt.
+Um bei Events, wie einer Benutzereingabe, eine Änderung hervorzurufen wird eine Message verwendet.
+Die Funktion **update**  die das alte Model und die Message nimmt gibt dann Seiteneffektfrei das neue Model zurück. 
 
+![Elm Architektur](architecture-overview-diagram.svg)
+
+Quelle: [The Elm Architecture](https://dennisreimann.de/articles/elm-architecture-overview.html)
+
+Message-Typen:
+``` haskell
+data InsertMsg
+  = Input String
+  | GoEdit
+
+data EditMsg
+  = ChangeGeschlecht (Maybe Geschlecht)
+  | ChangeVorname (Maybe String)
+  | ChangeNachname String
+  | ChangeSprache Sprache
+  | ChangeTitel (Array Titel)
+  | Save
+
+data Msg
+  = Insert InsertMsg
+  | Edit EditMsg
+```
+Die Messages wurden in Änderungen und Einfügen eingeteilt.
+
+##### Funktions Typ von update
+``` haskell
+update :: Model -> Msg -> Model
+```
