@@ -94,6 +94,7 @@
 <ul>
 <li><a href="#annahmen">Annahmen</a></li>
 <li><a href="#grobe-modellierung">Grobe Modellierung</a></li>
+<li><a href="#überblick-über-module">Überblick über Module</a></li>
 </ul></li>
 </ul>
 </nav>
@@ -165,8 +166,10 @@
 <h2 id="design">Design</h2>
 <h3 id="annahmen">Annahmen</h3>
 <ul>
-<li>Titel sind sprachen agnostisch, d.h. sie bleiben in allen Sprachen gleich</li>
-<li>Sprache wird aus der Anrede / Geschlecht erkannt und kann noch angepasst werden</li>
+<li>Titel sind sprachen-agnostisch, d.h. sie bleiben in allen Sprachen gleich.</li>
+<li>Sprache wird aus der Anrede / Geschlecht erkannt und kann noch angepasst werden.</li>
+<li>nur hardkodierte Adelsprädikate werden erkannt.</li>
+<li>Falls Nachname aus mehreren Wörtern besteht, müssen diese mit Bindestrich verbunden werden.</li>
 </ul>
 <h3 id="grobe-modellierung">Grobe Modellierung</h3>
 <p>Es wurde sich für die Elm Architektur entschieden. Elm ist eine funktionale Architektur um Web-Pages zu erstellen. Dabei wird der “Zustand” der App im Model gespeichert. Die Darstellung wird mit einer Funktion erzielt, die das Model nimmt und eine HTML-Seite erstellt. Um bei Events, wie einer Benutzereingabe, eine Änderung hervorzurufen wird eine Message verwendet. Die Funktion <strong>update</strong> die das alte Model und die Message nimmt gibt dann Seiteneffektfrei das neue Model zurück.</p>
@@ -179,19 +182,34 @@
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">Input</span> <span class="dt">String</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">GoEdit</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">EditMsg</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">ChangeGeschlecht</span> (<span class="dt">Maybe</span> <span class="dt">Geschlecht</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">ChangeVorname</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">ChangeNachname</span> <span class="dt">String</span></span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">ChangeSprache</span> <span class="dt">Sprache</span></span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">ChangeTitel</span> (<span class="dt">Array</span> <span class="dt">Titel</span>)</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Save</span></span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Msg</span></span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">Insert</span> <span class="dt">InsertMsg</span></span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Edit</span> <span class="dt">EditMsg</span></span></code></pre></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">DialogMsg</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">AddTitel</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">InputTitel</span> <span class="dt">String</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">OpenDialog</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">CloseDialog</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">EditMsg</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">ChangeGeschlecht</span> (<span class="dt">Maybe</span> <span class="dt">Geschlecht</span>)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">ChangeVorname</span> (<span class="dt">Maybe</span> <span class="dt">String</span>)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">ChangeNachname</span> <span class="dt">String</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">ChangeSprache</span> <span class="dt">Sprache</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">ChangeTitel</span> (<span class="dt">Array</span> <span class="dt">Titel</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Save</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> <span class="dt">Msg</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>  <span class="ot">=</span> <span class="dt">Insert</span> <span class="dt">InsertMsg</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Edit</span> <span class="dt">EditMsg</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>  <span class="op">|</span> <span class="dt">Dialog</span> <span class="dt">DialogMsg</span></span></code></pre></div>
 <p>Die Messages wurden in Änderungen und Einfügen eingeteilt.</p>
 <h5 id="funktions-typ-von-update">Funktions Typ von update</h5>
 <div class="sourceCode" id="cb2"><pre class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">update ::</span> <span class="dt">Model</span> <span class="ot">-&gt;</span> <span class="dt">Msg</span> <span class="ot">-&gt;</span> <span class="dt">Model</span></span></code></pre></div>
+<h3 id="überblick-über-module">Überblick über Module</h3>
+<ul>
+<li><a href="https://github.com/Matthi42/swq/blob/master/src/KontaktSplitter.purs">“Businesslogik (src/KontaktSplitter.purs)”</a></li>
+<li><a href="https://github.com/Matthi42/swq/blob/master/src/Types.purs">Model &amp; Typen (src/Types.purs)</a></li>
+<li><a href="https://github.com/Matthi42/swq/blob/master/src/Main.purs">UI &amp; Main (src/Main.purs)</a></li>
+<li><a href="https://github.com/Matthi42/swq/blob/master/src/Style.purs">UI Helper (src/Style.purs)</a></li>
+<li><a href="https://github.com/Matthi42/swq/blob/master/test/Main.purs">Tests (test/Main.purs)</a></li>
+</ul>
 </body>
 </html>
